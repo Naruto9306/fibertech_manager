@@ -53,7 +53,7 @@ Una aplicación móvil para la gestión y mantenimiento de infraestructura de fi
 📦 Instalación
 
     1 - Clonar el repositorio
-    git clone [url-del-repositorio]
+    git clone https://github.com/Naruto9306/fibertech_manager.git
     cd FibraOpticaApp
     2 - Instalar dependencias
     npm install
