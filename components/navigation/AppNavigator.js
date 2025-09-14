@@ -10,6 +10,8 @@ import CreateProject from '../screens/CreateProject';
 import ScanQr from '../screens/ScanQr';
 import ViewOnMap from '../screens/ViewOnMap';
 import CreateMaintenance from '../screens/CreateMaintenance';
+import ConnectivityDevices from '../screens/ConnectivityDevices';
+import NetworkMap from '../screens/NetworkMap';
 
 const Stack = createStackNavigator();
 
@@ -58,6 +60,16 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="CreateMaintenance" 
           component={CreateMaintenance}
+        />
+        <Stack.Screen 
+         name="ConnectivityDevices" 
+         component={ConnectivityDevices} 
+         options={{ title: 'Network Devices' }}
+        />
+        <Stack.Screen 
+         name="NetworkMap" 
+         component={NetworkMap} 
+         options={{ title: 'Network Map' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
