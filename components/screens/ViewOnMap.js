@@ -1,620 +1,3 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   Dimensions,
-//   ScrollView,
-//   Alert,
-//   Modal,
-//   TextInput
-// } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-// import MapView, { Marker, Polyline } from 'react-native-maps';
-// import * as Location from 'expo-location';
-
-// const ViewOnMap = ({ navigation, route }) => {
-//   const mapRef = useRef(null);
-//   const [region, setRegion] = useState({
-//     latitude: 29.6516,
-//     longitude: -82.3248,
-//     latitudeDelta: 0.0922,
-//     longitudeDelta: 0.0421,
-//   });
-//   const [selectedNode, setSelectedNode] = useState(null);
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [filteredNodes, setFilteredNodes] = useState([]);
-//   const [userLocation, setUserLocation] = useState(null);
-
-//   // Datos de ejemplo - nodos del proyecto de fibra óptica
-//   const projectNodes = [
-//     {
-//       id: 1,
-//       name: 'Central Office',
-//       type: 'CO',
-//       latitude: 29.6516,
-//       longitude: -82.3248,
-//       status: 'active',
-//       connections: [2, 3],
-//       description: 'Main central office with core switches',
-//       capacity: '10Gbps'
-//     },
-//     {
-//       id: 2,
-//       name: 'FDT-001',
-//       type: 'FDT',
-//       latitude: 29.6550,
-//       longitude: -82.3200,
-//       status: 'active',
-//       connections: [1, 4, 5],
-//       description: 'Fiber Distribution Terminal - Zone 1',
-//       capacity: '2.5Gbps'
-//     },
-//     {
-//       id: 3,
-//       name: 'FDT-002',
-//       type: 'FDT',
-//       latitude: 29.6480,
-//       longitude: -82.3280,
-//       status: 'maintenance',
-//       connections: [1, 6],
-//       description: 'Fiber Distribution Terminal - Zone 2',
-//       capacity: '2.5Gbps'
-//     },
-//     {
-//       id: 4,
-//       name: 'ONT-045',
-//       type: 'ONT',
-//       latitude: 29.6565,
-//       longitude: -82.3180,
-//       status: 'active',
-//       connections: [2],
-//       description: 'Optical Network Terminal - Building A',
-//       capacity: '1Gbps'
-//     },
-//     {
-//       id: 5,
-//       name: 'ONT-078',
-//       type: 'ONT',
-//       latitude: 29.6535,
-//       longitude: -82.3220,
-//       status: 'inactive',
-//       connections: [2],
-//       description: 'Optical Network Terminal - Building B',
-//       capacity: '1Gbps'
-//     },
-//     {
-//       id: 6,
-//       name: 'ONT-112',
-//       type: 'ONT',
-//       latitude: 29.6460,
-//       longitude: -82.3300,
-//       status: 'active',
-//       connections: [3],
-//       description: 'Optical Network Terminal - Building C',
-//       capacity: '1Gbps'
-//     },
-//     {
-//       id: 7,
-//       name: 'Splitter-01',
-//       type: 'SPLITTER',
-//       latitude: 29.6500,
-//       longitude: -82.3250,
-//       status: 'active',
-//       connections: [2, 3],
-//       description: 'Optical Splitter - Main junction',
-//       capacity: '5Gbps'
-//     }
-//   ];
-
-//   useEffect(() => {
-//     setFilteredNodes(projectNodes);
-//     getLocation();
-//   }, []);
-
-//   useEffect(() => {
-//     if (searchQuery) {
-//       const filtered = projectNodes.filter(node =>
-//         node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//         node.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//         node.description.toLowerCase().includes(searchQuery.toLowerCase())
-//       );
-//       setFilteredNodes(filtered);
-//     } else {
-//       setFilteredNodes(projectNodes);
-//     }
-//   }, [searchQuery]);
-
-//   const getLocation = async () => {
-//     try {
-//       let { status } = await Location.requestForegroundPermissionsAsync();
-//       if (status !== 'granted') {
-//         console.log('Permission to access location was denied');
-//         return;
-//       }
-
-//       let location = await Location.getCurrentPositionAsync({});
-//       setUserLocation({
-//         latitude: location.coords.latitude,
-//         longitude: location.coords.longitude,
-//       });
-//     } catch (error) {
-//       console.log('Error getting location:', error);
-//     }
-//   };
-
-//   const zoomIn = () => {
-//     mapRef.current.animateCamera({
-//       center: region,
-//       zoom: 1,
-//     });
-//   };
-
-//   const zoomOut = () => {
-//     mapRef.current.animateCamera({
-//       center: region,
-//       zoom: -1,
-//     });
-//   };
-
-//   const focusOnNode = (node) => {
-//     mapRef.current.animateCamera({
-//       center: {
-//         latitude: node.latitude,
-//         longitude: node.longitude,
-//       },
-//       zoom: 15,
-//     });
-//     setSelectedNode(node);
-//     setModalVisible(true);
-//   };
-
-//   const focusOnUserLocation = () => {
-//     if (userLocation) {
-//       mapRef.current.animateCamera({
-//         center: userLocation,
-//         zoom: 15,
-//       });
-//     } else {
-//       Alert.alert('Location', 'User location not available');
-//     }
-//   };
-
-//   const getNodeConnections = () => {
-//     const connections = [];
-//     projectNodes.forEach(node => {
-//       node.connections.forEach(connectionId => {
-//         const targetNode = projectNodes.find(n => n.id === connectionId);
-//         if (targetNode) {
-//           connections.push({
-//             from: { latitude: node.latitude, longitude: node.longitude },
-//             to: { latitude: targetNode.latitude, longitude: targetNode.longitude },
-//             status: node.status
-//           });
-//         }
-//       });
-//     });
-//     return connections;
-//   };
-
-//   const getNodeIcon = (type) => {
-//     switch (type) {
-//       case 'CO': return 'business';
-//       case 'FDT': return 'hardware-chip';
-//       case 'ONT': return 'home';
-//       case 'SPLITTER': return 'git-merge';
-//       default: return 'location';
-//     }
-//   };
-
-//   const getNodeColor = (status) => {
-//     switch (status) {
-//       case 'active': return '#2ecc71';
-//       case 'maintenance': return '#f39c12';
-//       case 'inactive': return '#e74c3c';
-//       default: return '#95a5a6';
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       {/* Header */}
-//       <View style={styles.header}>
-//         <TouchableOpacity 
-//           onPress={() => navigation.goBack()}
-//           style={styles.backButton}
-//         >
-//           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <Text style={styles.headerTitle}>Network Map</Text>
-//         <TouchableOpacity onPress={getLocation}>
-//           <Ionicons name="navigate" size={24} color="#3498db" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Search Bar */}
-//       <View style={styles.searchContainer}>
-//         <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
-//         <TextInput
-//           style={styles.searchInput}
-//           placeholder="Search nodes..."
-//           value={searchQuery}
-//           onChangeText={setSearchQuery}
-//           placeholderTextColor="#95a5a6"
-//         />
-//         {searchQuery ? (
-//           <TouchableOpacity onPress={() => setSearchQuery('')}>
-//             <Ionicons name="close-circle" size={20} color="#7f8c8d" />
-//           </TouchableOpacity>
-//         ) : null}
-//       </View>
-
-//       {/* Map View */}
-//       <MapView
-//         ref={mapRef}
-//         style={styles.map}
-//         region={region}
-//         onRegionChangeComplete={setRegion}
-//         showsUserLocation={true}
-//         showsMyLocationButton={false}
-//       >
-//         {/* User Location */}
-//         {userLocation && (
-//           <Marker
-//             coordinate={userLocation}
-//             title="Your Location"
-//             description="Current position"
-//           >
-//             <View style={styles.userMarker}>
-//               <Ionicons name="person" size={16} color="#ffffff" />
-//             </View>
-//           </Marker>
-//         )}
-
-//         {/* Project Nodes */}
-//         {filteredNodes.map((node) => (
-//           <Marker
-//             key={node.id}
-//             coordinate={{ latitude: node.latitude, longitude: node.longitude }}
-//             title={node.name}
-//             description={node.type}
-//             onPress={() => focusOnNode(node)}
-//           >
-//             <View style={[styles.marker, { backgroundColor: getNodeColor(node.status) }]}>
-//               <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
-//             </View>
-//           </Marker>
-//         ))}
-
-//         {/* Connections */}
-//         {getNodeConnections().map((connection, index) => (
-//           <Polyline
-//             key={index}
-//             coordinates={[connection.from, connection.to]}
-//             strokeColor={getNodeColor(connection.status)}
-//             strokeWidth={2}
-//             lineDashPattern={connection.status === 'inactive' ? [5, 5] : []}
-//           />
-//         ))}
-//       </MapView>
-
-//       {/* Controls */}
-//       <View style={styles.controls}>
-//         <TouchableOpacity style={styles.controlButton} onPress={zoomIn}>
-//           <Ionicons name="add" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.controlButton} onPress={zoomOut}>
-//           <Ionicons name="remove" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.controlButton} onPress={focusOnUserLocation}>
-//           <Ionicons name="navigate" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Node Details Modal */}
-//       <Modal
-//         visible={modalVisible}
-//         animationType="slide"
-//         transparent={true}
-//         onRequestClose={() => setModalVisible(false)}
-//       >
-//         <View style={styles.modalContainer}>
-//           <View style={styles.modalContent}>
-//             {selectedNode && (
-//               <>
-//                 <View style={styles.modalHeader}>
-//                   <View style={[styles.statusIndicator, { backgroundColor: getNodeColor(selectedNode.status) }]} />
-//                   <Text style={styles.modalTitle}>{selectedNode.name}</Text>
-//                   <TouchableOpacity onPress={() => setModalVisible(false)}>
-//                     <Ionicons name="close" size={24} color="#2c3e50" />
-//                   </TouchableOpacity>
-//                 </View>
-
-//                 <View style={styles.modalBody}>
-//                   <View style={styles.detailRow}>
-//                     <Ionicons name={getNodeIcon(selectedNode.type)} size={20} color="#3498db" />
-//                     <Text style={styles.detailLabel}>Type:</Text>
-//                     <Text style={styles.detailValue}>{selectedNode.type}</Text>
-//                   </View>
-
-//                   <View style={styles.detailRow}>
-//                     <Ionicons name="speedometer" size={20} color="#3498db" />
-//                     <Text style={styles.detailLabel}>Capacity:</Text>
-//                     <Text style={styles.detailValue}>{selectedNode.capacity}</Text>
-//                   </View>
-
-//                   <View style={styles.detailRow}>
-//                     <Ionicons name="information-circle" size={20} color="#3498db" />
-//                     <Text style={styles.detailLabel}>Status:</Text>
-//                     <Text style={[styles.detailValue, { color: getNodeColor(selectedNode.status) }]}>
-//                       {selectedNode.status.toUpperCase()}
-//                     </Text>
-//                   </View>
-
-//                   <Text style={styles.description}>{selectedNode.description}</Text>
-
-//                   <Text style={styles.connectionsTitle}>Connected to:</Text>
-//                   <ScrollView style={styles.connectionsList}>
-//                     {selectedNode.connections.map(connId => {
-//                       const connectedNode = projectNodes.find(n => n.id === connId);
-//                       return connectedNode ? (
-//                         <TouchableOpacity
-//                           key={connId}
-//                           style={styles.connectionItem}
-//                           onPress={() => {
-//                             setModalVisible(false);
-//                             focusOnNode(connectedNode);
-//                           }}
-//                         >
-//                           <Ionicons name={getNodeIcon(connectedNode.type)} size={16} color="#3498db" />
-//                           <Text style={styles.connectionName}>{connectedNode.name}</Text>
-//                           <Ionicons name="arrow-forward" size={16} color="#7f8c8d" />
-//                         </TouchableOpacity>
-//                       ) : null;
-//                     })}
-//                   </ScrollView>
-//                 </View>
-
-//                 <TouchableOpacity 
-//                   style={styles.viewDetailsButton}
-//                   onPress={() => {
-//                     setModalVisible(false);
-//                     Alert.alert('Node Details', 'Would open detailed node view');
-//                   }}
-//                 >
-//                   <Text style={styles.viewDetailsButtonText}>View Full Details</Text>
-//                 </TouchableOpacity>
-//               </>
-//             )}
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {/* Legend */}
-//       <View style={styles.legend}>
-//         <Text style={styles.legendTitle}>Legend</Text>
-//         <View style={styles.legendItem}>
-//           <View style={[styles.legendColor, { backgroundColor: '#2ecc71' }]} />
-//           <Text style={styles.legendText}>Active</Text>
-//         </View>
-//         <View style={styles.legendItem}>
-//           <View style={[styles.legendColor, { backgroundColor: '#f39c12' }]} />
-//           <Text style={styles.legendText}>Maintenance</Text>
-//         </View>
-//         <View style={styles.legendItem}>
-//           <View style={[styles.legendColor, { backgroundColor: '#e74c3c' }]} />
-//           <Text style={styles.legendText}>Inactive</Text>
-//         </View>
-//       </View>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#000000',
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     backgroundColor: '#000000',
-//     padding: 16,
-//     paddingTop: 50,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#333333',
-//   },
-//   backButton: {
-//     padding: 4,
-//   },
-//   headerTitle: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     color: '#ffffff',
-//   },
-//   searchContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: '#1a1a1a',
-//     margin: 16,
-//     marginTop: 8,
-//     padding: 12,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#333333',
-//   },
-//   searchIcon: {
-//     marginRight: 8,
-//   },
-//   searchInput: {
-//     flex: 1,
-//     color: '#ffffff',
-//     fontSize: 16,
-//   },
-//   map: {
-//     flex: 1,
-//     width: Dimensions.get('window').width,
-//     height: Dimensions.get('window').height - 200,
-//   },
-//   controls: {
-//     position: 'absolute',
-//     right: 16,
-//     bottom: 120,
-//     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//     borderRadius: 8,
-//     padding: 8,
-//   },
-//   controlButton: {
-//     padding: 8,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   marker: {
-//     width: 32,
-//     height: 32,
-//     borderRadius: 16,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     borderWidth: 2,
-//     borderColor: '#ffffff',
-//   },
-//   userMarker: {
-//     width: 24,
-//     height: 24,
-//     borderRadius: 12,
-//     backgroundColor: '#3498db',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   modalContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-//   },
-//   modalContent: {
-//     backgroundColor: '#1a1a1a',
-//     borderRadius: 16,
-//     padding: 24,
-//     width: '90%',
-//     maxHeight: '80%',
-//   },
-//   modalHeader: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     marginBottom: 16,
-//   },
-//   statusIndicator: {
-//     width: 12,
-//     height: 12,
-//     borderRadius: 6,
-//     marginRight: 8,
-//   },
-//   modalTitle: {
-//     flex: 1,
-//     fontSize: 18,
-//     fontWeight: '600',
-//     color: '#ffffff',
-//   },
-//   modalBody: {
-//     marginBottom: 20,
-//   },
-//   detailRow: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 12,
-//   },
-//   detailLabel: {
-//     fontSize: 14,
-//     color: '#bdc3c7',
-//     marginLeft: 8,
-//     marginRight: 4,
-//     fontWeight: '500',
-//   },
-//   detailValue: {
-//     fontSize: 14,
-//     color: '#ffffff',
-//     fontWeight: '600',
-//   },
-//   description: {
-//     fontSize: 14,
-//     color: '#ecf0f1',
-//     marginTop: 16,
-//     marginBottom: 16,
-//     lineHeight: 20,
-//   },
-//   connectionsTitle: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     color: '#ffffff',
-//     marginBottom: 8,
-//   },
-//   connectionsList: {
-//     maxHeight: 120,
-//   },
-//   connectionItem: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     padding: 12,
-//     backgroundColor: '#2c3e50',
-//     borderRadius: 8,
-//     marginBottom: 8,
-//   },
-//   connectionName: {
-//     flex: 1,
-//     fontSize: 14,
-//     color: '#ffffff',
-//     marginLeft: 8,
-//   },
-//   viewDetailsButton: {
-//     backgroundColor: '#3498db',
-//     padding: 16,
-//     borderRadius: 8,
-//     alignItems: 'center',
-//   },
-//   viewDetailsButtonText: {
-//     color: '#ffffff',
-//     fontWeight: '600',
-//   },
-//   legend: {
-//     position: 'absolute',
-//     left: 16,
-//     bottom: 16,
-//     backgroundColor: 'rgba(26, 26, 26, 0.9)',
-//     padding: 12,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#333333',
-//   },
-//   legendTitle: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     color: '#ffffff',
-//     marginBottom: 8,
-//   },
-//   legendItem: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 4,
-//   },
-//   legendColor: {
-//     width: 12,
-//     height: 12,
-//     borderRadius: 6,
-//     marginRight: 8,
-//   },
-//   legendText: {
-//     fontSize: 12,
-//     color: '#ecf0f1',
-//   },
-// });
-
-// export default ViewOnMap;
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -625,11 +8,14 @@ import {
   ScrollView,
   Alert,
   Modal,
-  TextInput
+  TextInput,
+  FlatList,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { NetworkMapService } from '../../service/storage';
 
 const ViewOnMap = ({ navigation, route }) => {
   const mapRef = useRef(null);
@@ -642,107 +28,49 @@ const ViewOnMap = ({ navigation, route }) => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredNodes, setFilteredNodes] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [savedMaps, setSavedMaps] = useState([]);
+  const [selectedMap, setSelectedMap] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showMapList, setShowMapList] = useState(true);
+  const [filteredMaps, setFilteredMaps] = useState([]);
+  const [isMapReady, setIsMapReady] = useState(false);
 
-  // Datos de ejemplo - nodos del proyecto de fibra óptica
-  const projectNodes = [
-    {
-      id: 1,
-      name: 'Central Office',
-      type: 'CO',
-      latitude: 29.6516,
-      longitude: -82.3248,
-      status: 'active',
-      connections: [2, 3],
-      description: 'Main central office with core switches',
-      capacity: '10Gbps'
-    },
-    {
-      id: 2,
-      name: 'FDT-001',
-      type: 'FDT',
-      latitude: 29.6550,
-      longitude: -82.3200,
-      status: 'active',
-      connections: [1, 4, 5],
-      description: 'Fiber Distribution Terminal - Zone 1',
-      capacity: '2.5Gbps'
-    },
-    {
-      id: 3,
-      name: 'FDT-002',
-      type: 'FDT',
-      latitude: 29.6480,
-      longitude: -82.3280,
-      status: 'maintenance',
-      connections: [1, 6],
-      description: 'Fiber Distribution Terminal - Zone 2',
-      capacity: '2.5Gbps'
-    },
-    {
-      id: 4,
-      name: 'ONT-045',
-      type: 'ONT',
-      latitude: 29.6565,
-      longitude: -82.3180,
-      status: 'active',
-      connections: [2],
-      description: 'Optical Network Terminal - Building A',
-      capacity: '1Gbps'
-    },
-    {
-      id: 5,
-      name: 'ONT-078',
-      type: 'ONT',
-      latitude: 29.6535,
-      longitude: -82.3220,
-      status: 'inactive',
-      connections: [2],
-      description: 'Optical Network Terminal - Building B',
-      capacity: '1Gbps'
-    },
-    {
-      id: 6,
-      name: 'ONT-112',
-      type: 'ONT',
-      latitude: 29.6460,
-      longitude: -82.3300,
-      status: 'active',
-      connections: [3],
-      description: 'Optical Network Terminal - Building C',
-      capacity: '1Gbps'
-    },
-    {
-      id: 7,
-      name: 'Splitter-01',
-      type: 'SPLITTER',
-      latitude: 29.6500,
-      longitude: -82.3250,
-      status: 'active',
-      connections: [2, 3],
-      description: 'Optical Splitter - Main junction',
-      capacity: '5Gbps'
-    }
-  ];
-
+  // Cargar mapas guardados
   useEffect(() => {
-    setFilteredNodes(projectNodes);
+    loadSavedMaps();
     getLocation();
   }, []);
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = projectNodes.filter(node =>
-        node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.description.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = savedMaps.filter(map =>
+        map.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (map.createdAt && map.createdAt.toLowerCase().includes(searchQuery.toLowerCase()))
       );
-      setFilteredNodes(filtered);
+      setFilteredMaps(filtered);
     } else {
-      setFilteredNodes(projectNodes);
+      setFilteredMaps(savedMaps);
     }
-  }, [searchQuery]);
+  }, [searchQuery, savedMaps]);
+
+  const handleMapReady = () => {
+  setIsMapReady(true);
+};
+
+  const loadSavedMaps = async () => {
+    try {
+      setLoading(true);
+      const maps = await NetworkMapService.getAllNetworkMaps();
+      setSavedMaps(maps);
+      setFilteredMaps(maps);
+    } catch (error) {
+      console.error('Error loading saved maps:', error);
+      Alert.alert('Error', 'Could not load saved maps');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getLocation = async () => {
     try {
@@ -762,21 +90,133 @@ const ViewOnMap = ({ navigation, route }) => {
     }
   };
 
+  // const selectMap = (map) => {
+  //   setSelectedMap(map);
+  //   setShowMapList(false);
+    
+  //   // Centrar el mapa en el primer nodo si existe
+  //   if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
+  //     const firstNode = map.nodes[0];
+  //     setRegion({
+  //       latitude: firstNode.latitude,
+  //       longitude: firstNode.longitude,
+  //       latitudeDelta: 0.0922,
+  //       longitudeDelta: 0.0421,
+  //     });
+
+  //     mapRef.current.animateCamera({
+  //       center: {
+  //         latitude: firstNode.latitude,
+  //         longitude: firstNode.longitude,
+  //       },
+  //       zoom: 12,
+  //     });
+  //   }
+  // };
+  const selectMap = (map) => {
+  setSelectedMap(map);
+  setShowMapList(false);
+  
+  // Centrar el mapa alrededor de todos los nodos
+  if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
+    // Calcular el bounding box que contenga todos los nodos
+    const coordinates = map.nodes.map(node => ({
+      latitude: node.latitude,
+      longitude: node.longitude
+    }));
+    
+    // Calcular los límites del área
+    const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
+    
+    // Calcular el centro del área
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    
+    // Calcular el delta apropiado para mostrar todos los puntos
+    const latDelta = (maxLat - minLat) * 1.2; // 20% de margen
+    const lngDelta = (maxLng - minLng) * 1.2; // 20% de margen
+    
+    // Asegurar un delta mínimo para que el zoom no sea demasiado cercano
+    const minDelta = 0.01;
+    
+    setRegion({
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: Math.max(latDelta, minDelta),
+      longitudeDelta: Math.max(lngDelta, minDelta),
+    });
+
+    // Usar setTimeout para asegurar que el mapa esté listo
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.animateToRegion({
+          latitude: centerLat,
+          longitude: centerLng,
+          latitudeDelta: Math.max(latDelta, minDelta),
+          longitudeDelta: Math.max(lngDelta, minDelta),
+        }, 1000); // Animación de 1 segundo
+      }
+    }, 100);
+  }
+};
+
+// Función para calcular el bounding box
+const calculateBoundingBox = (coordinates) => {
+  if (!coordinates || coordinates.length === 0) {
+    return {
+      minLat: 0,
+      maxLat: 0,
+      minLng: 0,
+      maxLng: 0
+    };
+  }
+
+  let minLat = coordinates[0].latitude;
+  let maxLat = coordinates[0].latitude;
+  let minLng = coordinates[0].longitude;
+  let maxLng = coordinates[0].longitude;
+
+  coordinates.forEach(coord => {
+    minLat = Math.min(minLat, coord.latitude);
+    maxLat = Math.max(maxLat, coord.latitude);
+    minLng = Math.min(minLng, coord.longitude);
+    maxLng = Math.max(maxLng, coord.longitude);
+  });
+
+  return { minLat, maxLat, minLng, maxLng };
+};
+
   const zoomIn = () => {
+    if (mapRef.current && isMapReady) {
     mapRef.current.animateCamera({
       center: region,
       zoom: 1,
     });
+  }
   };
 
   const zoomOut = () => {
+    if (mapRef.current && isMapReady) {
     mapRef.current.animateCamera({
       center: region,
       zoom: -1,
     });
+  }
   };
 
+  // const focusOnNode = (node) => {
+  //   mapRef.current.animateCamera({
+  //     center: {
+  //       latitude: node.latitude,
+  //       longitude: node.longitude,
+  //     },
+  //     zoom: 15,
+  //   });
+  //   setSelectedNode(node);
+  //   setModalVisible(true);
+  // };
   const focusOnNode = (node) => {
+  if (mapRef.current && isMapReady) {
     mapRef.current.animateCamera({
       center: {
         latitude: node.latitude,
@@ -786,43 +226,42 @@ const ViewOnMap = ({ navigation, route }) => {
     });
     setSelectedNode(node);
     setModalVisible(true);
-  };
+  }
+};
 
+  // const focusOnUserLocation = () => {
+  //   if (userLocation) {
+  //     mapRef.current.animateCamera({
+  //       center: userLocation,
+  //       zoom: 15,
+  //     });
+  //   } else {
+  //     Alert.alert('Location', 'User location not available');
+  //   }
+  // };
   const focusOnUserLocation = () => {
-    if (userLocation) {
-      mapRef.current.animateCamera({
-        center: userLocation,
-        zoom: 15,
-      });
-    } else {
-      Alert.alert('Location', 'User location not available');
-    }
-  };
+  if (mapRef.current && userLocation && isMapReady) {
+    mapRef.current.animateCamera({
+      center: userLocation,
+      zoom: 15,
+    });
+  } else {
+    Alert.alert('Location', 'User location not available');
+  }
+};
 
   const getNodeConnections = () => {
-    const connections = [];
-    projectNodes.forEach(node => {
-      node.connections.forEach(connectionId => {
-        const targetNode = projectNodes.find(n => n.id === connectionId);
-        if (targetNode) {
-          connections.push({
-            from: { latitude: node.latitude, longitude: node.longitude },
-            to: { latitude: targetNode.latitude, longitude: targetNode.longitude },
-            status: node.status
-          });
-        }
-      });
-    });
-    return connections;
+    if (!selectedMap || !selectedMap.connections) return [];
+    return selectedMap.connections;
   };
 
   const getNodeIcon = (type) => {
     switch (type) {
-      case 'CO': return 'business';
-      case 'FDT': return 'hardware-chip';
-      case 'ONT': return 'home';
-      case 'SPLITTER': return 'git-merge';
-      default: return 'location';
+      case 'MDF': return 'server';
+      case 'pedestal': return 'cube';
+      case 'IDF': return 'hardware-chip';
+      case 'unit': return 'home';
+      default: return 'help';
     }
   };
 
@@ -831,41 +270,139 @@ const ViewOnMap = ({ navigation, route }) => {
       case 'active': return '#2ecc71';
       case 'maintenance': return '#f39c12';
       case 'inactive': return '#e74c3c';
-      default: return '#95a5a6';
+      case 'MDF': return '#e74c3c';
+      case 'pedestal': return '#3498db';
+      case 'IDF': return '#2ecc71';
+      case 'unit': return '#f39c12';
+      default: return '#3498db';
     }
   };
+
+  const getNodeStatus = (node) => {
+    return node.status || 'active';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const renderMapItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.mapItem}
+      onPress={() => selectMap(item)}
+    >
+      <View style={styles.mapItemHeader}>
+        <Ionicons name="map" size={24} color="#3498db" />
+        <Text style={styles.mapItemTitle}>Project: {item.projectId}</Text>
+      </View>
+      
+      <View style={styles.mapItemDetails}>
+        <View style={styles.mapItemDetail}>
+          <Ionicons name="location" size={16} color="#7f8c8d" />
+          <Text style={styles.mapItemText}>{item.nodes?.length || 0} nodes</Text>
+        </View>
+        
+        <View style={styles.mapItemDetail}>
+          <Ionicons name="git-merge" size={16} color="#7f8c8d" />
+          <Text style={styles.mapItemText}>{item.connections?.length || 0} connections</Text>
+        </View>
+      </View>
+      
+      <Text style={styles.mapItemDate}>
+        Created: {formatDate(item.createdAt)}
+      </Text>
+      
+      {item.updatedAt && item.updatedAt !== item.createdAt && (
+        <Text style={styles.mapItemDate}>
+          Updated: {formatDate(item.updatedAt)}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text style={styles.loadingText}>Loading saved maps...</Text>
+      </View>
+    );
+  }
+
+  if (showMapList) {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Saved Network Maps</Text>
+          <TouchableOpacity onPress={loadSavedMaps}>
+            <Ionicons name="refresh" size={24} color="#3498db" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search maps by project ID..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#7f8c8d"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#7f8c8d" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Map List */}
+        {filteredMaps.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="map-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.emptyStateText}>No saved maps found</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Create network maps in the Network Map section to see them here
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredMaps}
+            renderItem={renderMapItem}
+            keyExtractor={(item) => item.id || item.projectId}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => navigation.goBack()}
+          onPress={() => setShowMapList(true)}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Network Map</Text>
+        <Text style={styles.headerTitle}>
+          {selectedMap?.projectId || 'Network Map'}
+        </Text>
         <TouchableOpacity onPress={getLocation}>
           <Ionicons name="navigate" size={24} color="#3498db" />
         </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search nodes..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#7f8c8d"
-        />
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#7f8c8d" />
-          </TouchableOpacity>
-        ) : null}
       </View>
 
       {/* Map View */}
@@ -876,6 +413,7 @@ const ViewOnMap = ({ navigation, route }) => {
         onRegionChangeComplete={setRegion}
         showsUserLocation={true}
         showsMyLocationButton={false}
+        onMapReady={handleMapReady}
       >
         {/* User Location */}
         {userLocation && (
@@ -891,15 +429,15 @@ const ViewOnMap = ({ navigation, route }) => {
         )}
 
         {/* Project Nodes */}
-        {filteredNodes.map((node) => (
+        {selectedMap?.nodes?.map((node, index) => (
           <Marker
-            key={node.id}
+            key={node.id || `node-${index}`}
             coordinate={{ latitude: node.latitude, longitude: node.longitude }}
             title={node.name}
             description={node.type}
             onPress={() => focusOnNode(node)}
           >
-            <View style={[styles.marker, { backgroundColor: getNodeColor(node.status) }]}>
+            <View style={[styles.marker, { backgroundColor: getNodeColor(getNodeStatus(node)) }]}>
               <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
             </View>
           </Marker>
@@ -909,8 +447,11 @@ const ViewOnMap = ({ navigation, route }) => {
         {getNodeConnections().map((connection, index) => (
           <Polyline
             key={index}
-            coordinates={[connection.from, connection.to]}
-            strokeColor={getNodeColor(connection.status)}
+            coordinates={[
+              { latitude: connection.from.latitude, longitude: connection.from.longitude },
+              { latitude: connection.to.latitude, longitude: connection.to.longitude }
+            ]}
+            strokeColor={getNodeColor(connection.status || 'active')}
             strokeWidth={3}
             lineDashPattern={connection.status === 'inactive' ? [5, 5] : []}
           />
@@ -931,99 +472,130 @@ const ViewOnMap = ({ navigation, route }) => {
       </View>
 
       {/* Node Details Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {selectedNode && (
-              <>
-                <View style={styles.modalHeader}>
-                  <View style={[styles.statusIndicator, { backgroundColor: getNodeColor(selectedNode.status) }]} />
-                  <Text style={styles.modalTitle}>{selectedNode.name}</Text>
-                  <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <Ionicons name="close" size={24} color="#2c3e50" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.modalBody}>
-                  <View style={styles.detailRow}>
-                    <Ionicons name={getNodeIcon(selectedNode.type)} size={20} color="#3498db" />
-                    <Text style={styles.detailLabel}>Type:</Text>
-                    <Text style={styles.detailValue}>{selectedNode.type}</Text>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="speedometer" size={20} color="#3498db" />
-                    <Text style={styles.detailLabel}>Capacity:</Text>
-                    <Text style={styles.detailValue}>{selectedNode.capacity}</Text>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="information-circle" size={20} color="#3498db" />
-                    <Text style={styles.detailLabel}>Status:</Text>
-                    <Text style={[styles.detailValue, { color: getNodeColor(selectedNode.status) }]}>
-                      {selectedNode.status.toUpperCase()}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.description}>{selectedNode.description}</Text>
-
-                  <Text style={styles.connectionsTitle}>Connected to:</Text>
-                  <ScrollView style={styles.connectionsList}>
-                    {selectedNode.connections.map(connId => {
-                      const connectedNode = projectNodes.find(n => n.id === connId);
-                      return connectedNode ? (
-                        <TouchableOpacity
-                          key={connId}
-                          style={styles.connectionItem}
-                          onPress={() => {
-                            setModalVisible(false);
-                            focusOnNode(connectedNode);
-                          }}
-                        >
-                          <Ionicons name={getNodeIcon(connectedNode.type)} size={16} color="#3498db" />
-                          <Text style={styles.connectionName}>{connectedNode.name}</Text>
-                          <Ionicons name="arrow-forward" size={16} color="#7f8c8d" />
-                        </TouchableOpacity>
-                      ) : null;
-                    })}
-                  </ScrollView>
-                </View>
-
-                <TouchableOpacity 
-                  style={styles.viewDetailsButton}
-                  onPress={() => {
-                    setModalVisible(false);
-                    Alert.alert('Node Details', 'Would open detailed node view');
-                  }}
-                >
-                  <Text style={styles.viewDetailsButtonText}>View Full Details</Text>
-                </TouchableOpacity>
-              </>
-            )}
+<Modal
+  visible={modalVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      {selectedNode && (
+        <>
+          <View style={styles.modalHeader}>
+            <View style={[styles.statusIndicator, { backgroundColor: getNodeColor(getNodeStatus(selectedNode)) }]} />
+            <Text style={styles.modalTitle}>{selectedNode.name}</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Ionicons name="close" size={24} color="#2c3e50" />
+            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <Text style={styles.legendTitle}>Legend</Text>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#2ecc71' }]} />
-          <Text style={styles.legendText}>Active</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#f39c12' }]} />
-          <Text style={styles.legendText}>Maintenance</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#e74c3c' }]} />
-          <Text style={styles.legendText}>Inactive</Text>
-        </View>
+          <ScrollView style={styles.modalScrollView}>
+            <View style={styles.modalBody}>
+              <View style={styles.detailRow}>
+                <Ionicons name={getNodeIcon(selectedNode.type)} size={20} color="#3498db" />
+                <Text style={styles.detailLabel}>Type:</Text>
+                <Text style={styles.detailValue}>{selectedNode.type}</Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Ionicons name="information-circle" size={20} color="#3498db" />
+                <Text style={styles.detailLabel}>Status:</Text>
+                <Text style={[styles.detailValue, { color: getNodeColor(getNodeStatus(selectedNode)) }]}>
+                  {getNodeStatus(selectedNode).toUpperCase()}
+                </Text>
+              </View>
+
+              {selectedNode.address && (
+                <View style={styles.detailRow}>
+                  <Ionicons name="location" size={20} color="#3498db" />
+                  <Text style={styles.detailLabel}>Address:</Text>
+                  <Text style={styles.detailValue}>{selectedNode.address}</Text>
+                </View>
+              )}
+
+              {selectedNode.owner && (
+                <View style={styles.detailRow}>
+                  <Ionicons name="person" size={20} color="#3498db" />
+                  <Text style={styles.detailLabel}>Owner:</Text>
+                  <Text style={styles.detailValue}>{selectedNode.owner}</Text>
+                </View>
+              )}
+
+              {selectedNode.description && (
+                <Text style={styles.description}>{selectedNode.description}</Text>
+              )}
+
+              {/* Show devices if available */}
+              {selectedNode.devices && selectedNode.devices.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Devices:</Text>
+                  <View style={styles.sectionContainer}>
+                    {selectedNode.devices.map((device, index) => (
+                      <View key={index} style={styles.itemCard}>
+                        <View style={styles.itemHeader}>
+                          <Ionicons name="hardware-chip" size={18} color="#3498db" />
+                          <Text style={styles.itemTitle}>{device.type}</Text>
+                        </View>
+                        <View style={styles.itemDetails}>
+                          <Text style={styles.itemDetail}>Ports: {device.ports}</Text>
+                          <Text style={styles.itemDetail}>Quantity: {device.quantity}</Text>
+                          {device.model && <Text style={styles.itemDetail}>Model: {device.model}</Text>}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {/* Show fibers if available */}
+              {selectedNode.fibers && selectedNode.fibers.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Fibers:</Text>
+                  <View style={styles.sectionContainer}>
+                    {selectedNode.fibers.map((fiber, index) => (
+                      <View key={index} style={styles.itemCard}>
+                        <View style={styles.itemHeader}>
+                          <Ionicons name="git-merge" size={18} color="#3498db" />
+                          <Text style={styles.itemTitle}>{fiber.type}</Text>
+                        </View>
+                        <View style={styles.itemDetails}>
+                          <Text style={styles.itemDetail}>Quantity: {fiber.quantity}</Text>
+                          {fiber.coreCount && <Text style={styles.itemDetail}>Cores: {fiber.coreCount}</Text>}
+                          {fiber.length && <Text style={styles.itemDetail}>Length: {fiber.length}m</Text>}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => setModalVisible(false)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
+
+      {/* Map Info Panel */}
+      <View style={styles.infoPanel}>
+        <Text style={styles.infoPanelTitle}>{selectedMap?.projectId}</Text>
+        <Text style={styles.infoPanelText}>
+          {selectedMap?.nodes?.length || 0} nodes • {selectedMap?.connections?.length || 0} connections
+        </Text>
+        <TouchableOpacity 
+          style={styles.infoPanelButton}
+          onPress={() => setShowMapList(true)}
+        >
+          <Text style={styles.infoPanelButtonText}>Change Map</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -1033,6 +605,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#7f8c8d',
   },
   header: {
     flexDirection: 'row',
@@ -1044,10 +627,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
@@ -1071,10 +651,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#dce4ec',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -1088,10 +665,74 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     fontSize: 16,
   },
+  listContainer: {
+    padding: 16,
+  },
+  mapItem: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  mapItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  mapItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginLeft: 12,
+  },
+  mapItemDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  mapItemDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mapItemText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginLeft: 6,
+  },
+  mapItemDate: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 4,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#7f8c8d',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#bdc3c7',
+    textAlign: 'center',
+  },
   map: {
     flex: 1,
     width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height - 200,
+    height: Dimensions.get('window').height,
   },
   controls: {
     position: 'absolute',
@@ -1101,10 +742,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
@@ -1125,10 +763,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ffffff',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 4,
@@ -1143,10 +778,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ffffff',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 4,
@@ -1164,10 +796,7 @@ const styles = StyleSheet.create({
     width: '90%',
     maxHeight: '80%',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
@@ -1260,10 +889,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
@@ -1273,48 +899,103 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  legend: {
+  infoPanel: {
     position: 'absolute',
     left: 16,
-    bottom: 16,
+    top: 120,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     padding: 14,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e9ecef',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
+    maxWidth: '70%',
   },
-  legendTitle: {
-    fontSize: 14,
+  infoPanelTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 10,
+    marginBottom: 4,
   },
-  legendItem: {
-    flexDirection: 'row',
+  infoPanelText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 8,
+  },
+  infoPanelButton: {
+    backgroundColor: '#3498db',
+    padding: 8,
+    borderRadius: 6,
     alignItems: 'center',
-    marginBottom: 6,
   },
-  legendColor: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+  infoPanelButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  legendText: {
-    fontSize: 13,
-    color: '#2c3e50',
-    fontWeight: '500',
-  },
+  modalScrollView: {
+  maxHeight: Dimensions.get('window').height * 0.6,
+},
+sectionTitle: {
+  fontSize: 17,
+  fontWeight: '600',
+  color: '#2c3e50',
+  marginTop: 20,
+  marginBottom: 12,
+},
+sectionContainer: {
+  marginBottom: 10,
+},
+itemCard: {
+  backgroundColor: '#f8f9fa',
+  borderRadius: 8,
+  padding: 12,
+  marginBottom: 10,
+  borderWidth: 1,
+  borderColor: '#e9ecef',
+},
+itemHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+itemTitle: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: '#2c3e50',
+  marginLeft: 8,
+},
+itemDetails: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+},
+itemDetail: {
+  fontSize: 13,
+  color: '#7f8c8d',
+  marginRight: 16,
+  marginBottom: 4,
+},
+closeButton: {
+  backgroundColor: '#3498db',
+  padding: 16,
+  borderRadius: 10,
+  alignItems: 'center',
+  marginTop: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 3,
+  elevation: 3,
+},
+closeButtonText: {
+  color: '#ffffff',
+  fontWeight: '600',
+  fontSize: 16,
+},
 });
 
 export default ViewOnMap;

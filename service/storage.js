@@ -1,5 +1,8 @@
 // service/storage.js
+import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const FILES_KEY = 'project_files';
 
 // Keys para AsyncStorage
 const STORAGE_KEYS = {
@@ -9,7 +12,8 @@ const STORAGE_KEYS = {
   NODES: '@fibraoptica/nodes',
   CONNECTIONS: '@fibraoptica/connections',
   DEVICE_CONFIG: '@fibraoptica/device_config',
-  FIBER_CONFIG: '@fibraoptica/fiber_config'
+  FIBER_CONFIG: '@fibraoptica/fiber_config',
+  NETWORK_MAPS: '@fibraoptica/network_maps'
 };
 
 // Helper functions
@@ -127,8 +131,168 @@ export const ProjectService = {
       console.error('❌ Error updating project:', error);
       throw error;
     }
+  }, 
+  // Eliminar proyecto y sus datos relacionados
+  deleteProject: async (projectId) => {
+    try {
+      // Eliminar proyecto
+      const projects = await ProjectService.getProjects();
+      const updatedProjects = projects.filter(p => p.id !== projectId);
+      await StorageService.setItem(STORAGE_KEYS.PROJECTS, updatedProjects);
+
+      // Eliminar datos relacionados
+      await NetworkMapService.deleteNetworkMapsByProject(projectId);
+      
+      // También podrías agregar aquí la eliminación de configuraciones de dispositivos y fibras
+      // si decides centralizar toda la limpieza aquí
+
+      return { success: true, deletedCount: 1 };
+    } catch (error) {
+      console.error('❌ Error deleting project:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
+
+// ==================== NUEVO SERVICIO PARA MAPAS DE RED ====================
+export const NetworkMapService = {
+  // Guardar mapa de red
+  saveNetworkMap: async (projectId, mapData) => {
+    try {
+      const allMaps = await NetworkMapService.getAllNetworkMaps();
+      
+      const newMap = {
+        id: `${projectId}_${Date.now()}`,
+        projectId: projectId,
+        ...mapData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Reemplazar si ya existe un mapa para este proyecto o agregar nuevo
+      const existingIndex = allMaps.findIndex(map => map.projectId === projectId);
+      if (existingIndex !== -1) {
+        allMaps[existingIndex] = newMap;
+      } else {
+        allMaps.push(newMap);
+      }
+
+      await StorageService.setItem(STORAGE_KEYS.NETWORK_MAPS, allMaps);
+      return { success: true, map: newMap };
+    } catch (error) {
+      console.error('❌ Error saving network map:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obtener mapa de red por projectId
+  getNetworkMapByProject: async (projectId) => {
+    try {
+      const allMaps = await NetworkMapService.getAllNetworkMaps();
+      return allMaps.find(map => map.projectId === projectId) || null;
+    } catch (error) {
+      console.error('❌ Error getting network map:', error);
+      return null;
+    }
+  },
+
+  // Obtener todos los mapas de red
+  getAllNetworkMaps: async () => {
+    try {
+      const maps = await StorageService.getItem(STORAGE_KEYS.NETWORK_MAPS);
+      return maps || [];
+    } catch (error) {
+      console.error('❌ Error getting all network maps:', error);
+      return [];
+    }
+  },
+
+  // Obtener mapa por ID específico
+  getNetworkMapById: async (mapId) => {
+    try {
+      const allMaps = await NetworkMapService.getAllNetworkMaps();
+      return allMaps.find(map => map.id === mapId) || null;
+    } catch (error) {
+      console.error('❌ Error getting network map by ID:', error);
+      return null;
+    }
+  },
+
+  // Eliminar mapa de red
+  deleteNetworkMap: async (mapId) => {
+    try {
+      const allMaps = await NetworkMapService.getAllNetworkMaps();
+      const updatedMaps = allMaps.filter(map => map.id !== mapId);
+      
+      await StorageService.setItem(STORAGE_KEYS.NETWORK_MAPS, updatedMaps);
+      return { success: true, deletedCount: allMaps.length - updatedMaps.length };
+    } catch (error) {
+      console.error('❌ Error deleting network map:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Eliminar todos los mapas de un proyecto
+  deleteNetworkMapsByProject: async (projectId) => {
+    try {
+      const allMaps = await NetworkMapService.getAllNetworkMaps();
+      const updatedMaps = allMaps.filter(map => map.projectId !== projectId);
+      
+      await StorageService.setItem(STORAGE_KEYS.NETWORK_MAPS, updatedMaps);
+      return { 
+        success: true, 
+        deletedCount: allMaps.length - updatedMaps.length 
+      };
+    } catch (error) {
+      console.error('❌ Error deleting project network maps:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obtener estadísticas del mapa
+  getMapStatistics: async (projectId) => {
+    try {
+      const map = await NetworkMapService.getNetworkMapByProject(projectId);
+      if (!map || !map.nodes) {
+        return null;
+      }
+
+      const nodeCountByType = {};
+      let totalDevices = 0;
+      let totalFibers = 0;
+      let totalConnections = map.connections ? map.connections.length : 0;
+
+      map.nodes.forEach(node => {
+        // Contar nodos por tipo
+        nodeCountByType[node.type] = (nodeCountByType[node.type] || 0) + 1;
+        
+        // Contar dispositivos
+        if (node.devices && Array.isArray(node.devices)) {
+          totalDevices += node.devices.reduce((sum, device) => sum + (device.quantity || 1), 0);
+        }
+        
+        // Contar fibras
+        if (node.fibers && Array.isArray(node.fibers)) {
+          totalFibers += node.fibers.reduce((sum, fiber) => sum + (fiber.quantity || 1), 0);
+        }
+      });
+
+      return {
+        totalNodes: map.nodes.length,
+        nodeCountByType,
+        totalDevices,
+        totalFibers,
+        totalConnections,
+        createdAt: map.createdAt,
+        updatedAt: map.updatedAt
+      };
+    } catch (error) {
+      console.error('❌ Error getting map statistics:', error);
+      return null;
+    }
+  }
+};
+
 
 // Device configuration operations
 export const DeviceConfigService = {
@@ -291,6 +455,30 @@ export const UnitsService = {
       console.error('❌ Error getting units info:', error);
       return null;
     }
+  },
+
+  updateUnitsInfo: async (projectId, unitsInfo) => {
+    try {
+      const allUnitsInfo = await StorageService.getItem(STORAGE_KEYS.UNITS_INFO) || {};
+      
+      // Si no existe la entrada para este projectId, la creamos
+      if (!allUnitsInfo[projectId]) {
+        allUnitsInfo[projectId] = {};
+      }
+      
+      // Actualizar la información de unidades
+      allUnitsInfo[projectId] = {
+        ...allUnitsInfo[projectId],
+        ...unitsInfo,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await StorageService.setItem(STORAGE_KEYS.UNITS_INFO, allUnitsInfo);
+      return { success: true, data: allUnitsInfo[projectId] };
+    } catch (error) {
+      console.error('❌ Error updating units info:', error);
+      throw error;
+    }
   }
 };
 
@@ -321,6 +509,30 @@ export const ProjectTypeService = {
     } catch (error) {
       console.error('❌ Error getting project type:', error);
       return null;
+    }
+  },
+
+  updateProjectType: async (projectId, projectType) => {
+    try {
+      const allProjectTypes = await StorageService.getItem(STORAGE_KEYS.PROJECT_TYPES) || {};
+      
+      // Si no existe la entrada para este projectId, la creamos
+      if (!allProjectTypes[projectId]) {
+        allProjectTypes[projectId] = {};
+      }
+      
+      // Actualizar el tipo de proyecto
+      allProjectTypes[projectId] = {
+        ...allProjectTypes[projectId],
+        ...projectType,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await StorageService.setItem(STORAGE_KEYS.PROJECT_TYPES, allProjectTypes);
+      return { success: true, data: allProjectTypes[projectId] };
+    } catch (error) {
+      console.error('❌ Error updating project type:', error);
+      throw error;
     }
   }
 };
@@ -424,10 +636,132 @@ export const NodeService = {
       console.error('Error updating node:', error);
       throw error;
     }
+  },
+
+  deleteNode: async (nodeId) => {
+    try {
+      const allNodes = await StorageService.getItem(STORAGE_KEYS.NODES) || [];
+      
+      // Filtrar el nodo a eliminar
+      const updatedNodes = allNodes.filter(node => node.id !== nodeId);
+      
+      // Guardar la nueva lista de nodos
+      await StorageService.setItem(STORAGE_KEYS.NODES, updatedNodes);
+      
+      console.log('✅ Node deleted successfully:', nodeId);
+      return { success: true, rowsAffected: 1 };
+    } catch (error) {
+      console.error('❌ Error deleting node:', error);
+      throw error;
+    }
   }
 };
 
+export const FileService = {
+  // Guardar archivo adjunto
+  async saveProjectFile(projectId, file) {
+    try {
+      // Leer el contenido del archivo
+      const fileContent = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const fileData = {
+        id: Date.now().toString(),
+        projectId,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        content: fileContent,
+        uploaded: new Date().toISOString(),
+      };
+
+      // Guardar en AsyncStorage
+      const existingFiles = await this.getProjectFiles(projectId);
+      const updatedFiles = [...existingFiles, fileData];
+      
+      await AsyncStorage.setItem(
+        `${FILES_KEY}_${projectId}`,
+        JSON.stringify(updatedFiles)
+      );
+
+      return fileData;
+    } catch (error) {
+      console.error('Error saving file:', error);
+      throw error;
+    }
+  },
+
+  // Obtener archivos de un proyecto
+  async getProjectFiles(projectId) {
+    try {
+      const filesJson = await AsyncStorage.getItem(`${FILES_KEY}_${projectId}`);
+      return filesJson ? JSON.parse(filesJson) : [];
+    } catch (error) {
+      console.error('Error getting files:', error);
+      return [];
+    }
+  },
+
+  // Eliminar archivo
+  async deleteFile(projectId, fileId) {
+    try {
+      const files = await this.getProjectFiles(projectId);
+      const updatedFiles = files.filter(file => file.id !== fileId);
+      
+      await AsyncStorage.setItem(
+        `${FILES_KEY}_${projectId}`,
+        JSON.stringify(updatedFiles)
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      return false;
+    }
+  },
+
+  // Descargar archivo
+  async downloadFile(file, fileName = null) {
+    try {
+      const fileUri = FileSystem.documentDirectory + (fileName || file.name);
+      
+      await FileSystem.writeAsStringAsync(fileUri, file.content, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      return fileUri;
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      throw error;
+    }
+  },
+};
+
 // Initialize storage
+// export const initializeStorage = async () => {
+//   try {
+//     // Initialize empty arrays for all storage keys
+//     const keys = Object.values(STORAGE_KEYS);
+    
+//     for (const key of keys) {
+//       const data = await StorageService.getItem(key);
+//       if (data === null) {
+//         if (key === STORAGE_KEYS.UNITS_INFO || key === STORAGE_KEYS.PROJECT_TYPES) {
+//           await StorageService.setItem(key, {});
+//         } else {
+//           await StorageService.setItem(key, []);
+//         }
+//       }
+//     }
+
+//     console.log('✅ Storage initialized successfully');
+//     return true;
+//   } catch (error) {
+//     console.error('❌ Error initializing storage:', error);
+//     return false;
+//   }
+// };
 export const initializeStorage = async () => {
   try {
     // Initialize empty arrays for all storage keys
@@ -436,7 +770,8 @@ export const initializeStorage = async () => {
     for (const key of keys) {
       const data = await StorageService.getItem(key);
       if (data === null) {
-        if (key === STORAGE_KEYS.UNITS_INFO || key === STORAGE_KEYS.PROJECT_TYPES) {
+        if (key === STORAGE_KEYS.UNITS_INFO || 
+            key === STORAGE_KEYS.PROJECT_TYPES) {
           await StorageService.setItem(key, {});
         } else {
           await StorageService.setItem(key, []);
@@ -459,5 +794,9 @@ export default {
   UnitsService,
   ProjectTypeService,
   NodeService,
+  NetworkMapService, // ← NUEVO SERVICIO
+  DeviceConfigService,
+  FiberConfigService,
+  FileService,
   initializeStorage
 };
