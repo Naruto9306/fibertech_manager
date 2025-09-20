@@ -101,7 +101,7 @@ const Settings = ({ navigation, device,  }) => {
         >
           <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#ffffff' : '#2c3e50'} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>{t('settings')}</Text>
+        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>{t('settings')} & {t('tools')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -187,12 +187,12 @@ const Settings = ({ navigation, device,  }) => {
         </View>
 
         {/* Notifications */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDarkMode && styles.darkText]}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             {t('notifications')}
          </Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <View style={[styles.iconContainer, { backgroundColor: '#3498db20' }]}>
@@ -220,7 +220,7 @@ const Settings = ({ navigation, device,  }) => {
             {t('privacyLocation')}
             </Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <View style={[styles.iconContainer, { backgroundColor: '#2ecc7120' }]}>
@@ -286,7 +286,7 @@ const Settings = ({ navigation, device,  }) => {
             {t('dataManagement')}
             </Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={handleClearCache}
@@ -321,13 +321,38 @@ const Settings = ({ navigation, device,  }) => {
           </View>
         </View>
 
+        {/* Herramientas */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+            {t('tools')}
+            </Text>
+          
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('Tools')}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: '#9b59b620' }]}>
+                <Ionicons name="hammer-outline" size={22} color="#9b59b6" />
+              </View>
+              <View style={styles.settingText}>
+                <Text style={[styles.settingLabel, isDarkMode]}>
+    {t('tools')}</Text>
+                <Text style={[styles.settingDescription, isDarkMode]}>
+    {t('accessTools')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Legal */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             {t('legal')}
             </Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={handlePrivacyPolicy}
@@ -364,7 +389,7 @@ const Settings = ({ navigation, device,  }) => {
 
         {/* App Info */}
         <View style={styles.section}>
-          <View style={styles.infoCard}>
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
             <View style={styles.infoItem}>
               <Ionicons name="phone-portrait-outline" size={20} color="#7f8c8d" />
               <Text style={[styles.infoText, isDarkMode && styles.darkSubText]}>FTTH Manager v1.2.0</Text>

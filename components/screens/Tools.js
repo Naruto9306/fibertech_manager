@@ -149,7 +149,7 @@ const colors = {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
     {t('maintenanceManagement')}</Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity 
               style={styles.settingItem}
               onPress={handleMaintenanceHistory}
@@ -193,7 +193,7 @@ const colors = {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
     {t('multimediaManagement')}</Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity 
               style={styles.settingItem}
               onPress={handleMultimediaView}
@@ -237,7 +237,7 @@ const colors = {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
     {t('reports')}</Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity 
               style={styles.settingItem}
               onPress={handleReportDetails}

@@ -14,6 +14,8 @@ import ConnectivityDevices from '../screens/ConnectivityDevices';
 import NetworkMap from '../screens/NetworkMap';
 import { useApp } from '../context/AppContext';
 import LoadingScreen from '../screens/LoadingScreen';
+import ListaProyectos from '../screens/ListaProyectos';
+import DetallesProyecto from '../screens/DetallesProyecto';
 
 const Stack = createStackNavigator();
 
@@ -81,6 +83,16 @@ const AppNavigator = () => {
          name="NetworkMap" 
          component={NetworkMap} 
          options={{ title: 'Network Map' }}
+        />
+        <Stack.Screen 
+         name="ListaProyectos" 
+         component={ListaProyectos} 
+         options={{ title: 'Listado de proyectos' }}
+        />
+        <Stack.Screen 
+         name="DetallesProyecto" 
+         component={DetallesProyecto} 
+         options={{ title: 'Detalles del proyectos' }}
         />
             {/* otras pantallas protegidas */}
           </>

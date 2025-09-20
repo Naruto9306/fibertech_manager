@@ -5,12 +5,12 @@
   "build": {
     "production": {
       "android": {
-        "buildType": "apk",
+        "buildType": "app-bundle",
         "gradleCommand": ":app:assembleRelease"
       },
       "autoIncrement": true,
       "env": {
-        "APP_VERSION": "1.0.0"
+        "APP_VERSION": "1.0.1"
       }
     },
     "preview": {

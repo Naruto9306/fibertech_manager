@@ -32,9 +32,10 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
+      "abiFilters": ["armeabi-v7a", "arm64-v8a"],
       "enableDangerousExperimentalLeanBuilds": true,
       "jsEngine": "hermes",
-      "ndk": "arm64-v8a,armeabi-v7a",
+      "ndk": "arm64-v8a, armeabi-v7a",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -70,7 +71,8 @@
             "targetSdkVersion": 35,
             "buildToolsVersion": "35.0.0",
             "reactNativeArchitectures": [
-              "armeabi-v7a"
+              "armeabi-v7a",
+              "arm64-v8a"
             ]
           },
           "ios": {
