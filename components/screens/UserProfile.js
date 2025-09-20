@@ -17,7 +17,7 @@ import { useDevice } from '../context/DeviceContext';
 const UserProfile = ({ navigation, device, theme }) => {
   const { t } = useTranslation();
   const { isDarkMode, logout } = useApp();
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
   
   const [userData, setUserData] = useState({
     name: 'Peter P Doe',
@@ -98,9 +98,9 @@ const UserProfile = ({ navigation, device, theme }) => {
   };
 
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <View style={[stylesFull.screen, isDarkMode && styles.darkContainer, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset + 10 }]}>
+      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset - 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

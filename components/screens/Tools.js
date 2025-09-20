@@ -19,7 +19,7 @@ const Tools = ({ navigation, theme }) => {
   const [notifications, setNotifications] = useState(true);
   const [gpsTracking, setGpsTracking] = useState(true);
   const [cloudSync, setCloudSync] = useState(true);
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
 
   const { t } = useTranslation();
 const { isDarkMode } = useApp();
@@ -80,9 +80,9 @@ const colors = {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[stylesFull.screen, { backgroundColor: colors.background }, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset + 10 }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset - 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

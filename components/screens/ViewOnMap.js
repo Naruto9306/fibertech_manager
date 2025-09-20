@@ -21,7 +21,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useDevice } from '../context/DeviceContext';
 
 const ViewOnMap = ({ navigation, route, theme }) => {
-  const { topInset, isTablet } = useDevice();
+  const { topInset, isTablet, stylesFull, bottomInset } = useDevice();
   const mapRef = useRef(null);
   const [region, setRegion] = useState({
     latitude: 29.6516,
@@ -475,9 +475,9 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[stylesFull.screen, { backgroundColor: colors.background }, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset } ]}>
+      <View style={[styles.header, { paddingTop: topInset + 10 } ]}>
         <TouchableOpacity 
           onPress={() => setShowMapList(true)}
           style={styles.backButton}
@@ -495,16 +495,22 @@ const ViewOnMap = ({ navigation, route, theme }) => {
       {/* Map View */}
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={[styles.map]}
         region={region}
         onRegionChangeComplete={setRegion}
         showsUserLocation={true}
         showsMyLocationButton={false}
         onMapReady={handleMapReady}
-        onMapError={(error) => console.log('Error del mapa:', error)}
-        onMarkerPress={(e) => {
-          console.log('Marker pressed:', e.nativeEvent);
-        }}
+        // onMapError={(error) => console.log('Error del mapa:', error)}
+        // onMarkerPress={(e) => {
+        //   console.log('Marker pressed:', e.nativeEvent);
+        // }}
+        mapPadding={{
+        top: topInset,
+        right: 0,
+        bottom: bottomInset,
+        left: 0
+      }}
       >
         {/* User Location */}
         {userLocation && (

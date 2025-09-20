@@ -260,6 +260,7 @@ export const AppProvider = ({ children }) => {
   // Alertas y mensajes
   success: 'Success',
   error: 'Error',
+  existingMaps: 'Existing Maps',
   failedToLoadProject: 'Failed to load project data',
   fileAttachedSuccess: 'File attached successfully',
   failedToAttachFile: 'Failed to attach file: ',
@@ -576,6 +577,7 @@ couldNotLoadProjects: 'Projects could not be loaded',
     },
     es: {
       pullToRefresh: 'Desliza hacia abajo para actualizar',
+      existingMaps: 'Mapas Existentes',
 refreshing: 'Actualizando...',
 lastUpdate: 'Última actualización',
 couldNotLoadProjects: 'No se pudieron cargar los proyectos',

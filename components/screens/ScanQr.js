@@ -16,7 +16,7 @@ import { useApp } from '../context/AppContext';
 import { useDevice } from '../context/DeviceContext';
 
 const ScanQr = ({ navigation }) => {
-  const { topInset } = useDevice;
+  const { topInset, bottomInset, stylesFull } = useDevice;
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(true);
@@ -175,9 +175,9 @@ const ScanQr = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset }]}>
+      <View style={[styles.header, { paddingTop: topInset + 15 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

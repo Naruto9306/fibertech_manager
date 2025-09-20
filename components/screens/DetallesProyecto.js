@@ -14,7 +14,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useDevice } from '../context/DeviceContext';
 
 const DetallesProyecto = ({ route, navigation }) => {
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
   const { isDarkMode } = useApp();
   const { t } = useTranslation();
   const { proyecto } = route.params;
@@ -38,9 +38,9 @@ const DetallesProyecto = ({ route, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[stylesFull.screen, { backgroundColor: colors.background }, {paddingBottom: bottomInset}]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset - 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -79,7 +79,7 @@ const DetallesProyecto = ({ route, navigation }) => {
           {proyecto.address && (
             <View style={styles.detailRow}>
               <Ionicons name="location" size={20} color="#3498db" />
-              <Text style={[styles.detailLabel, { color: colors.subText }]}>Dirección:</Text>
+              <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('address')}:</Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>{proyecto.address}, {proyecto.state}, {proyecto.country}, {proyecto.city}</Text>
             </View>
           )}

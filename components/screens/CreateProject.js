@@ -21,7 +21,7 @@ import { useApp } from '../context/AppContext';
 import { useDevice } from '../context/DeviceContext';
 
 const CreateProject = ({ navigation, route, theme }) => {
-  const { topInset, isTablet } = useDevice();
+  const { topInset, isTablet, bottomInset, stylesFull } = useDevice();
   const { projectId } = route.params || {};
   const isEditMode = !!projectId;
 
@@ -589,9 +589,9 @@ const CreateProject = ({ navigation, route, theme }) => {
   };
 
   return (
-    <View style={[combinedStyles.container]}>
+    <View style={[stylesFull.screen, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[combinedStyles.header, { paddingTop: topInset }]}>
+      <View style={[combinedStyles.header, { paddingTop: topInset - 10}]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

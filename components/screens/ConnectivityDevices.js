@@ -20,7 +20,7 @@ const ConnectivityDevices = ({ route, navigation, theme }) => {
   const { projectId } = route.params;
   const { t } = useTranslation();
   const { isDarkMode } = useApp();
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
 
   // Colores dinámicos basados en el tema
   const colors = {
@@ -418,9 +418,9 @@ const ConnectivityDevices = ({ route, navigation, theme }) => {
   };
 
   return (
-    <View style={combinedStyles.container}>
+    <View style={[stylesFull.screen, {paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[combinedStyles.header, { paddingTop: topInset + 10 }]}>
+      <View style={[combinedStyles.header, { paddingTop: topInset - 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

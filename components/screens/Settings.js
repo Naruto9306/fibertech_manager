@@ -18,7 +18,7 @@ const Settings = ({ navigation, device,  }) => {
   const [locationServices, setLocationServices] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
   const [dataSaving, setDataSaving] = useState(false);
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
 
   const languages = [
     { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -92,9 +92,9 @@ const Settings = ({ navigation, device,  }) => {
   };
 
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <View style={[stylesFull.screen, isDarkMode && styles.darkContainer, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset }]}>
+      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset - 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

@@ -57,7 +57,7 @@ const darkTheme = {
 
 const NetworkMap = ({ route, navigation }) => {
 
-  const { topInset } = useDevice();
+  const { topInset, bottomInset, stylesFull } = useDevice();
   const { projectId } = route.params;
   const { isDarkMode } = useApp();
   const { t } = useTranslation();
@@ -1935,7 +1935,7 @@ const getColorHexCode = (colorName) => {
 };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.background}, { paddingTop: topInset }]}>
+    <View style={[stylesFull.screen, {backgroundColor: theme.background}, { paddingTop: topInset + 15, paddingBottom: bottomInset }]}>
 
       <NotificationContainer />
       <MapView
