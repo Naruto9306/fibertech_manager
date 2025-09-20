@@ -1,703 +1,3 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   Dimensions,
-//   ScrollView,
-//   Alert,
-//   Modal,
-//   TextInput,
-//   FlatList,
-//   ActivityIndicator
-// } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-// import MapView, { Marker, Polyline } from 'react-native-maps';
-// import * as Location from 'expo-location';
-// import { NetworkMapService } from '../../service/storage';
-// import { useApp } from '../context/AppContext';
-// import { useTranslation } from '../hooks/useTranslation';
-// import { useDevice } from '../context/DeviceContext';
-
-// const ViewOnMap = ({ navigation, route, device, theme }) => {
-//   const { topInset, isTablet } = useDevice();
-//   const mapRef = useRef(null);
-//   const [region, setRegion] = useState({
-//     latitude: 29.6516,
-//     longitude: -82.3248,
-//     latitudeDelta: 0.0922,
-//     longitudeDelta: 0.0421,
-//   });
-//   const [selectedNode, setSelectedNode] = useState(null);
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [userLocation, setUserLocation] = useState(null);
-//   const [savedMaps, setSavedMaps] = useState([]);
-//   const [selectedMap, setSelectedMap] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [showMapList, setShowMapList] = useState(true);
-//   const [filteredMaps, setFilteredMaps] = useState([]);
-//   const [isMapReady, setIsMapReady] = useState(false);
-
-//   const { t } = useTranslation();
-// const { isDarkMode } = useApp();
-
-// const colors = {
-//   background : isDarkMode ? '#121212' : '#ffffff',
-//   card       : isDarkMode ? '#1e1e1e' : '#ffffff',
-//   text       : isDarkMode ? '#ffffff' : '#2c3e50',
-//   subText    : isDarkMode ? '#b0b0b0' : '#7f8c8d',
-//   border     : isDarkMode ? '#333'    : '#ecf0f1',
-//   input      : isDarkMode ? '#2a2a2a' : '#ffffff',
-// };
-
-//   // Cargar mapas guardados
-//   useEffect(() => {
-//     loadSavedMaps();
-//     getLocation();
-//   }, []);
-
-//   useEffect(() => {
-//     if (searchQuery) {
-//       const filtered = savedMaps.filter(map =>
-//         map.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//         (map.createdAt && map.createdAt.toLowerCase().includes(searchQuery.toLowerCase()))
-//       );
-//       setFilteredMaps(filtered);
-//     } else {
-//       setFilteredMaps(savedMaps);
-//     }
-//   }, [searchQuery, savedMaps]);
-
-//   const handleMapReady = () => {
-//   setIsMapReady(true);
-// };
-
-// const validateCoordinates = (lat, lng) => {
-//   if (lat === null || lng === null || lat === undefined || lng === undefined) {
-//     return null;
-//   }
-
-//   const latitude = typeof lat === 'string' ? parseFloat(lat) : lat;
-//   const longitude = typeof lng === 'string' ? parseFloat(lng) : lng;
-
-//   if (isNaN(latitude) || isNaN(longitude)) {
-//     console.warn('Coordenadas inválidas:', lat, lng);
-//     return null;
-//   }
-
-//   // Validar rango de coordenadas
-//   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-//     console.warn('Coordenadas fuera de rango:', latitude, longitude);
-//     return null;
-//   }
-
-//   return { latitude, longitude };
-// };
-
-//   const loadSavedMaps = async () => {
-//     try {
-//       setLoading(true);
-//       const maps = await NetworkMapService.getAllNetworkMaps();
-//       setSavedMaps(maps);
-//       setFilteredMaps(maps);
-//     } catch (error) {
-//       console.error('Error loading saved maps:', error);
-//       Alert.alert(t('error'), t('couldNotLoadMaps'));
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const getLocation = async () => {
-//     try {
-//       let { status } = await Location.requestForegroundPermissionsAsync();
-//       if (status !== 'granted') {
-//         console.log('Permission to access location was denied');
-//         return;
-//       }
-
-//       let location = await Location.getCurrentPositionAsync({});
-//       setUserLocation({
-//         latitude: location.coords.latitude,
-//         longitude: location.coords.longitude,
-//       });
-//     } catch (error) {
-//       console.log('Error getting location:', error);
-//     }
-//   };
-
-//   // const selectMap = (map) => {
-//   //   setSelectedMap(map);
-//   //   setShowMapList(false);
-    
-//   //   // Centrar el mapa en el primer nodo si existe
-//   //   if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
-//   //     const firstNode = map.nodes[0];
-//   //     setRegion({
-//   //       latitude: firstNode.latitude,
-//   //       longitude: firstNode.longitude,
-//   //       latitudeDelta: 0.0922,
-//   //       longitudeDelta: 0.0421,
-//   //     });
-
-//   //     mapRef.current.animateCamera({
-//   //       center: {
-//   //         latitude: firstNode.latitude,
-//   //         longitude: firstNode.longitude,
-//   //       },
-//   //       zoom: 12,
-//   //     });
-//   //   }
-//   // };
-//   // const selectMap = (map) => {
-//   //  setSelectedMap(map);
-//   //  setShowMapList(false);
-  
-//   //  // Centrar el mapa alrededor de todos los nodos
-//   //  if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
-//   //   // Calcular el bounding box que contenga todos los nodos
-//   //   const coordinates = map.nodes.map(node => ({
-//   //     latitude: node.latitude,
-//   //     longitude: node.longitude
-//   //   }));
-    
-//   //   // Calcular los límites del área
-//   //   const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
-    
-//   //   // Calcular el centro del área
-//   //   const centerLat = (minLat + maxLat) / 2;
-//   //   const centerLng = (minLng + maxLng) / 2;
-    
-//   //   // Calcular el delta apropiado para mostrar todos los puntos
-//   //   const latDelta = (maxLat - minLat) * 1.2; // 20% de margen
-//   //   const lngDelta = (maxLng - minLng) * 1.2; // 20% de margen
-    
-//   //   // Asegurar un delta mínimo para que el zoom no sea demasiado cercano
-//   //   const minDelta = 0.01;
-    
-//   //   setRegion({
-//   //     latitude: centerLat,
-//   //     longitude: centerLng,
-//   //     latitudeDelta: Math.max(latDelta, minDelta),
-//   //     longitudeDelta: Math.max(lngDelta, minDelta),
-//   //   });
-
-//   //   // Usar setTimeout para asegurar que el mapa esté listo
-//   //   setTimeout(() => {
-//   //     if (mapRef.current) {
-//   //       mapRef.current.animateToRegion({
-//   //         latitude: centerLat,
-//   //         longitude: centerLng,
-//   //         latitudeDelta: Math.max(latDelta, minDelta),
-//   //         longitudeDelta: Math.max(lngDelta, minDelta),
-//   //       }, 1000); // Animación de 1 segundo
-//   //     }
-//   //   }, 100);
-//   //   }
-//   // };
-//   const selectMap = (map) => {
-//   setSelectedMap(map);
-//   setShowMapList(false);
-  
-//   // Filtrar nodos con coordenadas válidas
-//   const validNodes = map.nodes?.filter(node => 
-//     validateCoordinates(node.latitude, node.longitude)
-//   ) || [];
-
-//   if (validNodes.length > 0 && mapRef.current && isMapReady) {
-//     const coordinates = validNodes.map(node => ({
-//       latitude: node.latitude,
-//       longitude: node.longitude
-//     }));
-    
-//     const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
-//     const centerLat = (minLat + maxLat) / 2;
-//     const centerLng = (minLng + maxLng) / 2;
-//     const latDelta = (maxLat - minLat) * 1.2;
-//     const lngDelta = (maxLng - minLng) * 1.2;
-//     const minDelta = 0.01;
-    
-//     setRegion({
-//       latitude: centerLat,
-//       longitude: centerLng,
-//       latitudeDelta: Math.max(latDelta, minDelta),
-//       longitudeDelta: Math.max(lngDelta, minDelta),
-//     });
-
-//     setTimeout(() => {
-//       if (mapRef.current) {
-//         mapRef.current.animateToRegion({
-//           latitude: centerLat,
-//           longitude: centerLng,
-//           latitudeDelta: Math.max(latDelta, minDelta),
-//           longitudeDelta: Math.max(lngDelta, minDelta),
-//         }, 1000);
-//       }
-//     }, 100);
-//   }
-// };
-
-// // Función para calcular el bounding box
-// const calculateBoundingBox = (coordinates) => {
-//   if (!coordinates || coordinates.length === 0) {
-//     return {
-//       minLat: 0,
-//       maxLat: 0,
-//       minLng: 0,
-//       maxLng: 0
-//     };
-//   }
-
-//   let minLat = coordinates[0].latitude;
-//   let maxLat = coordinates[0].latitude;
-//   let minLng = coordinates[0].longitude;
-//   let maxLng = coordinates[0].longitude;
-
-//   coordinates.forEach(coord => {
-//     minLat = Math.min(minLat, coord.latitude);
-//     maxLat = Math.max(maxLat, coord.latitude);
-//     minLng = Math.min(minLng, coord.longitude);
-//     maxLng = Math.max(maxLng, coord.longitude);
-//   });
-
-//   return { minLat, maxLat, minLng, maxLng };
-// };
-
-//   const zoomIn = () => {
-//     if (mapRef.current && isMapReady) {
-//     mapRef.current.animateCamera({
-//       center: region,
-//       zoom: 1,
-//     });
-//   }
-//   };
-
-//   const zoomOut = () => {
-//     if (mapRef.current && isMapReady) {
-//     mapRef.current.animateCamera({
-//       center: region,
-//       zoom: -1,
-//     });
-//   }
-//   };
-
-//   const focusOnNode = (node) => {
-//   const coords = validateCoordinates(node.latitude, node.longitude);
-//   if (!coords) {
-//     Alert.alert(t('error'), t('invalidCoordinatesForNode'));
-//     return;
-//   }
-
-//   if (mapRef.current && isMapReady) {
-//     mapRef.current.animateCamera({
-//       center: coords,
-//       zoom: 15,
-//     });
-//     setSelectedNode(node);
-//     setModalVisible(true);
-//   }
-// };
-
-
-//   const focusOnUserLocation = () => {
-//   if (mapRef.current && userLocation && isMapReady) {
-//     mapRef.current.animateCamera({
-//       center: userLocation,
-//       zoom: 15,
-//     });
-//   } else {
-//     Alert.alert(t('location'), t('userLocationNotAvailable'));
-//   }
-// };
-
-//   const getNodeConnections = () => {
-//   if (!selectedMap || !selectedMap.connections) return [];
-  
-//   return selectedMap.connections.filter(connection => {
-//     const fromCoords = validateCoordinates(connection.from.latitude, connection.from.longitude);
-//     const toCoords = validateCoordinates(connection.to.latitude, connection.to.longitude);
-//     return fromCoords && toCoords;
-//   });
-// };
-
-//   const getNodeIcon = (type) => {
-//     switch (type) {
-//       case 'MDF': return 'server';
-//       case 'pedestal': return 'cube';
-//       // case 'IDF': return 'hardware-chip';
-//       case 'unit': return 'home';
-//       default: return 'help';
-//     }
-//   };
-
-//   const getNodeColor = (status) => {
-//     switch (status) {
-//       case 'active': return '#2ecc71';
-//       case 'maintenance': return '#f39c12';
-//       case 'inactive': return '#e74c3c';
-//       case 'MDF': return '#e74c3c';
-//       case 'pedestal': return '#3498db';
-//       // case 'IDF': return '#2ecc71';
-//       case 'unit': return '#f39c12';
-//       default: return '#3498db';
-//     }
-//   };
-
-//   const getNodeStatus = (node) => {
-//     return node.status || 'active';
-//   };
-
-//   const formatDate = (dateString) => {
-//     if (!dateString) return 'Unknown date';
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-//   };
-
-//   const renderMapItem = ({ item }) => (
-//     <TouchableOpacity 
-//       style={styles.mapItem}
-//       onPress={() => selectMap(item)}
-//     >
-//       <View style={styles.mapItemHeader}>
-//         <Ionicons name="map" size={24} color="#3498db" />
-//         <Text style={[styles.mapItemTitle]}>
-//     {t('project')}: {item.projectId}</Text>
-//       </View>
-      
-//       <View style={styles.mapItemDetails}>
-//         <View style={styles.mapItemDetail}>
-//           <Ionicons name="location" size={16} color="#7f8c8d" />
-//           <Text style={[styles.mapItemText, { color: colors.subText }]}>
-//     {item.nodes?.length || 0} {t('nodes')}</Text>
-//         </View>
-        
-//         <View style={styles.mapItemDetail}>
-//           <Ionicons name="git-merge" size={16} color="#7f8c8d" />
-//           <Text style={[styles.mapItemText, { color: colors.subText }]}>
-//    {item.connections?.length || 0} {t('connections')}</Text>
-//         </View>
-//       </View>
-      
-//       <Text style={[styles.mapItemDate, { color: colors.subText }]}>
-//     {t('created')}: {formatDate(item.createdAt)}
-//       </Text>
-      
-//       {item.updatedAt && item.updatedAt !== item.createdAt && (
-//         <Text style={[styles.mapItemDate, { color: colors.subText }]}>
-//     {t('updated')}: {formatDate(item.updatedAt)}
-//         </Text>
-//       )}
-//     </TouchableOpacity>
-//   );
-
-//   if (loading) {
-//     return (
-//       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#3498db" />
-//         <Text style={[styles.loadingText, { color: colors.subText }]}>
-//     {t('loadingSavedMaps')}</Text>
-//       </View>
-//     );
-//   }
-
-//   if (showMapList) {
-//     return (
-//       <View style={[styles.container, { backgroundColor: colors.background }]}>
-//         {/* Header */}
-//         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset }]}>
-//           <TouchableOpacity 
-//             onPress={() => navigation.goBack()}
-//             style={styles.backButton}
-//           >
-//             <Ionicons name="arrow-back" size={24} color="#2c3e50" />
-//           </TouchableOpacity>
-//           <Text style={[styles.headerTitle, { color: colors.text }]}>
-//     {t('savedNetworkMaps')}</Text>
-//           <TouchableOpacity onPress={loadSavedMaps}>
-//             <Ionicons name="refresh" size={24} color="#3498db" />
-//           </TouchableOpacity>
-//         </View>
-
-//         {/* Search Bar */}
-//         <View style={[styles.searchContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-//           <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
-//           <TextInput
-//             // style={styles.searchInput}
-//             placeholder={t('searchMapsPlaceholder')}
-//             value={searchQuery}
-//             onChangeText={setSearchQuery}
-//             placeholderTextColor={colors.subText}
-//     style={[styles.searchInput, { backgroundColor: colors.input, color: colors.text }]}
-//           />
-//           {searchQuery ? (
-//             <TouchableOpacity onPress={() => setSearchQuery('')}>
-//               <Ionicons name="close-circle" size={20} color="#7f8c8d" />
-//             </TouchableOpacity>
-//           ) : null}
-//         </View>
-
-//         {/* Map List */}
-//         {filteredMaps.length === 0 ? (
-//           <View style={styles.emptyState}>
-//             <Ionicons name="map-outline" size={64} color="#bdc3c7" />
-//             <Text style={[styles.emptyStateText, { color: colors.text }]}>
-//     {t('noSavedMaps')}</Text>
-//             <Text style={[styles.emptyStateSubtext, { color: colors.subText }]}>
-//     {t('createMapsToSeeHere')}
-//             </Text>
-//           </View>
-//         ) : (
-//           <FlatList
-//             data={filteredMaps}
-//             renderItem={renderMapItem}
-//             keyExtractor={(item) => item.id || item.projectId}
-//             contentContainerStyle={styles.listContainer}
-//             showsVerticalScrollIndicator={false}
-//           />
-//         )}
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <View style={[styles.container, { backgroundColor: colors.background }]}>
-//       {/* Header */}
-//       <View style={[styles.header, { paddingTop: topInset } ]}>
-//         <TouchableOpacity 
-//           onPress={() => setShowMapList(true)}
-//           style={styles.backButton}
-//         >
-//           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <Text style={[styles.headerTitle, { color: colors.text }]}>
-//     {selectedMap?.projectId || t('networkMap')}
-//         </Text>
-//         <TouchableOpacity onPress={getLocation}>
-//           <Ionicons name="navigate" size={24} color="#3498db" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Map View */}
-//       <MapView
-//         ref={mapRef}
-//   style={styles.map}
-//   region={region}
-//   onRegionChangeComplete={setRegion}
-//   showsUserLocation={true}
-//   showsMyLocationButton={false}
-//   onMapReady={handleMapReady}
-//   onMapError={(error) => console.log('Error del mapa:', error)}
-//   onMarkerPress={(e) => {
-//     console.log('Marker pressed:', e.nativeEvent);
-//   }}
-//       >
-//         {/* User Location */}
-//         {userLocation && (
-//           <Marker
-//             coordinate={userLocation}
-//             title={t('yourLocation')}
-//     description={t('currentPosition')}
-//           >
-//             <View style={styles.userMarker}>
-//               <Ionicons name="person" size={16} color="#ffffff" />
-//             </View>
-//           </Marker>
-//         )}
-
-//         {/* Project Nodes */}
-//         {/* {selectedMap?.nodes?.map((node, index) => (
-//           <Marker
-//             key={node.id || `node-${index}`}
-//             coordinate={{ latitude: node.latitude, longitude: node.longitude }}
-//             title={node.name}
-//             description={node.type}
-//             onPress={() => focusOnNode(node)}
-//           >
-//             <View style={[styles.marker, { backgroundColor: getNodeColor(getNodeStatus(node)) }]}>
-//               <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
-//             </View>
-//           </Marker>
-//         ))} */}
-//         {selectedMap?.nodes?.map((node, index) => {
-//   const coords = validateCoordinates(node.latitude, node.longitude);
-//   if (!coords) return null;
-
-//   return (
-//     <Marker
-//       key={node.id || `node-${index}`}
-//       coordinate={coords}
-//       title={node.name}
-//       description={node.type}
-//       onPress={() => focusOnNode(node)}
-//     >
-//       <View style={[styles.marker, { backgroundColor: getNodeColor(getNodeStatus(node)) }]}>
-//         <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
-//       </View>
-//     </Marker>
-//   );
-// }).filter(Boolean)}
-
-//         {/* Connections */}
-//         {getNodeConnections().map((connection, index) => (
-//           <Polyline
-//             key={index}
-//             coordinates={[
-//               { latitude: connection.from.latitude, longitude: connection.from.longitude },
-//               { latitude: connection.to.latitude, longitude: connection.to.longitude }
-//             ]}
-//             strokeColor={getNodeColor(connection.status || 'active')}
-//             strokeWidth={3}
-//             lineDashPattern={connection.status === 'inactive' ? [5, 5] : []}
-//           />
-//         ))}
-//       </MapView>
-
-//       {/* Controls */}
-//       <View style={styles.controls}>
-//         <TouchableOpacity style={styles.controlButton} onPress={zoomIn}>
-//           <Ionicons name="add" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.controlButton} onPress={zoomOut}>
-//           <Ionicons name="remove" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.controlButton} onPress={focusOnUserLocation}>
-//           <Ionicons name="navigate" size={24} color="#2c3e50" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Node Details Modal */}
-// <Modal
-//   visible={modalVisible}
-//   animationType="slide"
-//   transparent={true}
-//   onRequestClose={() => setModalVisible(false)}
-// >
-//   <View style={styles.modalContainer}>
-//     <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-//       {selectedNode && (
-//         <>
-//           <View style={styles.modalHeader}>
-//             <View style={[styles.statusIndicator, { backgroundColor: getNodeColor(getNodeStatus(selectedNode)) }]} />
-//             <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedNode.name}</Text>
-//             <TouchableOpacity onPress={() => setModalVisible(false)}>
-//               <Ionicons name="close" size={24} color="#2c3e50" />
-//             </TouchableOpacity>
-//           </View>
-
-//           <ScrollView style={styles.modalScrollView}>
-//             <View style={styles.modalBody}>
-//               <View style={styles.detailRow}>
-//                 <Ionicons name={getNodeIcon(selectedNode.type)} size={20} color="#3498db" />
-//                 <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('type')}:</Text>
-//                 <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.type}</Text>
-//               </View>
-
-//               <View style={styles.detailRow}>
-//                 <Ionicons name="information-circle" size={20} color="#3498db" />
-//                 <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('status')}:</Text>
-//                 <Text style={[styles.detailValue, { color: getNodeColor(getNodeStatus(selectedNode)) }]}>
-//                   {getNodeStatus(selectedNode).toUpperCase()}
-//                 </Text>
-//               </View>
-
-//               {selectedNode.address && (
-//                 <View style={styles.detailRow}>
-//                   <Ionicons name="location" size={20} color="#3498db" />
-//                   <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('address')}:</Text>
-//                   <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.address}</Text>
-//                 </View>
-//               )}
-
-//               {selectedNode.owner && (
-//                 <View style={styles.detailRow}>
-//                   <Ionicons name="person" size={20} color="#3498db" />
-//                   <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('owner')}:</Text>
-//                   <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.owner}</Text>
-//                 </View>
-//               )}
-
-//               {selectedNode.description && (
-//                 <Text style={[styles.description, { color: colors.text, backgroundColor: colors.card, borderLeftColor: colors.border }]}>
-//     {selectedNode.description}</Text>
-//               )}
-
-//               {/* Show devices if available */}
-//               {selectedNode.devices && selectedNode.devices.length > 0 && (
-//                 <>
-//                   <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('devices')}:</Text>
-//                   <View style={styles.sectionContainer}>
-//                     {selectedNode.devices.map((device, index) => (
-//                       <View key={index} style={styles.itemCard}>
-//                         <View style={styles.itemHeader}>
-//                           <Ionicons name="hardware-chip" size={18} color="#3498db" />
-//                           <Text style={[styles.itemTitle, { color: colors.text }]}>{device.type}</Text>
-//                         </View>
-//                         <View style={styles.itemDetails}>
-//                           <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('ports')}: {device.ports}</Text>
-//                           <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('quantity')}: {device.quantity}</Text>
-//                           {device.model && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('model')}: {device.model}</Text>}
-//                         </View>
-//                       </View>
-//                     ))}
-//                   </View>
-//                 </>
-//               )}
-
-//               {/* Show fibers if available */}
-//               {selectedNode.fibers && selectedNode.fibers.length > 0 && (
-//                 <>
-//                   <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('fibers')}:</Text>
-//                   <View style={styles.sectionContainer}>
-//                     {selectedNode.fibers.map((fiber, index) => (
-//                       <View key={index} style={styles.itemCard}>
-//                         <View style={styles.itemHeader}>
-//                           <Ionicons name="git-merge" size={18} color="#3498db" />
-//                           <Text style={[styles.itemTitle, { color: colors.text }]}>{fiber.type}</Text>
-//                         </View>
-//                         <View style={styles.itemDetails}>
-//                           <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('quantity')}: {fiber.quantity}</Text>
-//                           {fiber.coreCount && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('cores')}: {fiber.coreCount}</Text>}
-//                           {fiber.length && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('length')}: {fiber.length}m</Text>}
-//                         </View>
-//                       </View>
-//                     ))}
-//                   </View>
-//                 </>
-//               )}
-//             </View>
-//           </ScrollView>
-
-//           <TouchableOpacity 
-//             style={styles.closeButton}
-//             onPress={() => setModalVisible(false)}
-//           >
-//             <Text style={styles.closeButtonText}>Close</Text>
-//           </TouchableOpacity>
-//         </>
-//       )}
-//     </View>
-//   </View>
-// </Modal>
-
-//       {/* Map Info Panel */}
-//       <View style={[styles.infoPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-//         <Text style={[styles.infoPanelTitle, { color: colors.text }]}>
-//     {selectedMap?.projectId}</Text>
-//         <Text style={[styles.infoPanelText, { color: colors.subText }]}>
-//     {selectedMap?.nodes?.length || 0} {t('nodes')} • {selectedMap?.connections?.length || 0} {t('connections')}
-//         </Text>
-//         <TouchableOpacity 
-//           style={styles.infoPanelButton}
-//           onPress={() => setShowMapList(true)}
-//         >
-//           <Text style={styles.infoPanelButtonText}>{t('changeMap')}</Text>
-//         </TouchableOpacity>
-//       </View>
-//     </View>
-//   );
-// };
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -720,7 +20,7 @@ import { useApp } from '../context/AppContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { useDevice } from '../context/DeviceContext';
 
-const ViewOnMap = ({ navigation, route, device, theme }) => {
+const ViewOnMap = ({ navigation, route, theme }) => {
   const { topInset, isTablet } = useDevice();
   const mapRef = useRef(null);
   const [region, setRegion] = useState({
@@ -811,6 +111,69 @@ const ViewOnMap = ({ navigation, route, device, theme }) => {
     }
   };
 
+  // Función para eliminar un mapa individual
+  const deleteMap = async (map) => {
+    Alert.alert(
+      t('confirmDelete'),
+      t('confirmDeleteMapMessage', { name: getProjectDisplayName(map) }),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await NetworkMapService.deleteNetworkMap(map.id || map.projectId);
+              Alert.alert(t('success'), t('mapDeletedSuccessfully'));
+              loadSavedMaps(); // Recargar la lista
+            } catch (error) {
+              console.error('Error deleting map:', error);
+              Alert.alert(t('error'), t('couldNotDeleteMap'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Función para eliminar todos los mapas
+  const deleteAllMaps = async () => {
+    if (savedMaps.length === 0) {
+      Alert.alert(t('info'), t('noMapsToDelete'));
+      return;
+    }
+
+    Alert.alert(
+      t('confirmDeleteAll'),
+      t('confirmDeleteAllMapsMessage', { count: savedMaps.length }),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('deleteAll'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              for (const map of savedMaps) {
+                await NetworkMapService.deleteNetworkMap(map.id || map.projectId);
+              }
+              Alert.alert(t('success'), t('allMapsDeletedSuccessfully'));
+              loadSavedMaps(); // Recargar la lista
+            } catch (error) {
+              console.error('Error deleting all maps:', error);
+              Alert.alert(t('error'), t('couldNotDeleteAllMaps'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const getLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -830,45 +193,47 @@ const ViewOnMap = ({ navigation, route, device, theme }) => {
   };
 
   const selectMap = (map) => {
-    setSelectedMap(map);
-    setShowMapList(false);
+    Alert.alert('✅ ' + t('success'), t('viewmap'));
+    // Metodo para abrir el mapa en la app de mapas predeterminada
+    // setSelectedMap(map);
+    // setShowMapList(false);
     
-    // Filtrar nodos con coordenadas válidas
-    const validNodes = map.nodes?.filter(node => 
-      validateCoordinates(node.latitude, node.longitude)
-    ) || [];
+    // // Filtrar nodos con coordenadas válidas
+    // const validNodes = map.nodes?.filter(node => 
+    //   validateCoordinates(node.latitude, node.longitude)
+    // ) || [];
 
-    if (validNodes.length > 0 && mapRef.current && isMapReady) {
-      const coordinates = validNodes.map(node => ({
-        latitude: node.latitude,
-        longitude: node.longitude
-      }));
+    // if (validNodes.length > 0 && mapRef.current && isMapReady) {
+    //   const coordinates = validNodes.map(node => ({
+    //     latitude: node.latitude,
+    //     longitude: node.longitude
+    //   }));
       
-      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
-      const centerLat = (minLat + maxLat) / 2;
-      const centerLng = (minLng + maxLng) / 2;
-      const latDelta = (maxLat - minLat) * 1.2;
-      const lngDelta = (maxLng - minLng) * 1.2;
-      const minDelta = 0.01;
+    //   const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
+    //   const centerLat = (minLat + maxLat) / 2;
+    //   const centerLng = (minLng + maxLng) / 2;
+    //   const latDelta = (maxLat - minLat) * 1.2;
+    //   const lngDelta = (maxLng - minLng) * 1.2;
+    //   const minDelta = 0.01;
       
-      setRegion({
-        latitude: centerLat,
-        longitude: centerLng,
-        latitudeDelta: Math.max(latDelta, minDelta),
-        longitudeDelta: Math.max(lngDelta, minDelta),
-      });
+    //   setRegion({
+    //     latitude: centerLat,
+    //     longitude: centerLng,
+    //     latitudeDelta: Math.max(latDelta, minDelta),
+    //     longitudeDelta: Math.max(lngDelta, minDelta),
+    //   });
 
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude: centerLat,
-            longitude: centerLng,
-            latitudeDelta: Math.max(latDelta, minDelta),
-            longitudeDelta: Math.max(lngDelta, minDelta),
-          }, 1000);
-        }
-      }, 100);
-    }
+    //   setTimeout(() => {
+    //     if (mapRef.current) {
+    //       mapRef.current.animateToRegion({
+    //         latitude: centerLat,
+    //         longitude: centerLng,
+    //         latitudeDelta: Math.max(latDelta, minDelta),
+    //         longitudeDelta: Math.max(lngDelta, minDelta),
+    //       }, 1000);
+    //     }
+    //   }, 100);
+    // }
   };
 
   // Función para calcular el bounding box
@@ -986,7 +351,7 @@ const ViewOnMap = ({ navigation, route, device, theme }) => {
 
   const getProjectDisplayName = (map) => {
     // Mostrar el nombre del proyecto si está disponible, de lo contrario usar el ID
-    return map.projectName || map.projectId || t('unnamedProject');
+    return map.name || map.projectId || t('unnamedProject');
   };
 
   const renderMapItem = ({ item }) => (
@@ -999,6 +364,12 @@ const ViewOnMap = ({ navigation, route, device, theme }) => {
         <Text style={[styles.mapItemTitle, { color: colors.text }]}>
           {getProjectDisplayName(item)}
         </Text>
+        <TouchableOpacity 
+          onPress={() => deleteMap(item)}
+          style={styles.deleteButton}
+        >
+          <Ionicons name="trash" size={20} color="#e74c3c" />
+        </TouchableOpacity>
       </View>
       
       <View style={styles.mapItemDetails}>
@@ -1054,6 +425,9 @@ const ViewOnMap = ({ navigation, route, device, theme }) => {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             {t('savedNetworkMaps')}
           </Text>
+          <TouchableOpacity onPress={deleteAllMaps} style={styles.deleteAllButton}>
+              <Ionicons name="trash" size={24} color="#e74c3c" />
+            </TouchableOpacity>
           <TouchableOpacity onPress={loadSavedMaps}>
             <Ionicons name="refresh" size={24} color="#3498db" />
           </TouchableOpacity>
@@ -1722,6 +1096,26 @@ closeButtonText: {
   fontWeight: '600',
   fontSize: 16,
 },
+headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteAllButton: {
+    padding: 4,
+    marginRight: 12,
+  },
+  refreshButton: {
+    padding: 4,
+  },
+  mapItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'space-between',
+  },
+  deleteButton: {
+    padding: 4,
+  },
 });
 
 export default ViewOnMap;

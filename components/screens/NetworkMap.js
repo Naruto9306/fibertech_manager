@@ -79,6 +79,10 @@ const NetworkMap = ({ route, navigation }) => {
   const [selectedNodeForMenu, setSelectedNodeForMenu] = useState(null); // ← nuevo
   const [connections, setConnections] = useState([]);
 
+  // Agregar estado para el modal de nombre del mapa
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [mapName, setMapName] = useState('');
+
   const [notifications, setNotifications] = useState([]);
 
   const [region, setRegion] = useState({
@@ -130,6 +134,23 @@ const showNotification = (message, type = 'info', duration = 3000) => {
   
   return id;
 };
+
+// Función para abrir el modal de nombre del mapa
+  const openSaveMapModal = () => {
+    setMapName(''); // Limpiar el nombre anterior
+    setShowNameModal(true);
+  };
+
+  // Función para guardar el mapa con nombre
+  const saveNetworkMapWithName = async () => {
+    if (!mapName.trim()) {
+      showNotification(t('mapNameRequired'), 'error');
+      return;
+    }
+
+    setShowNameModal(false);
+    await saveNetworkMap(mapName.trim());
+  };
 
 // Función para eliminar notificaciones
 const removeNotification = (id) => {
@@ -382,69 +403,71 @@ const removeNotification = (id) => {
     
     return assignedDevice ? (assignedDevice.quantity || 1) : 0;
   };
-
-  // const saveNetworkMap = async () => {
-  //   try {
-  //     const networkMapData = {
-  //       projectId,
-  //       nodes: nodes,
-  //       connections: getConnections(),
-  //       createdAt: new Date().toISOString()
-  //     };
-      
-  //     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
-      
-  //     if (result.success) {
-  //       Alert.alert(t('success'), t('networkMapSaved'), [
-  //         {
-  //           text: 'OK',
-  //           onPress: () => navigation.navigate('Dashboard')
-  //         }
-  //       ]);
-  //     } else {
-  //       Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
-  //     }
-  //   } catch (error) {
-  //     // // console.log(t('errorSavingNetworkMap'), error);
-  //     Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
-  //   }
-  // };
-
-  // Cargar mapa de red guardado
   
   // Buscar la función saveNetworkMap y reemplazarla con esta versión actualizada
-const saveNetworkMap = async () => {
-  try {
-    // Obtener todas las conexiones (automáticas + manuales)
-    const autoConnections = getConnections();
-    const allConnections = [...autoConnections, ...connections];
+// const saveNetworkMap = async () => {
+//   try {
+//     // Obtener todas las conexiones (automáticas + manuales)
+//     const autoConnections = getConnections();
+//     const allConnections = [...autoConnections, ...connections];
     
-    const networkMapData = {
-      projectId,
-      nodes: nodes,
-      connections: allConnections, // Guardar todas las conexiones
-      createdAt: new Date().toISOString()
-    };
+//     const networkMapData = {
+//       name,
+//       projectId,
+//       nodes: nodes,
+//       connections: allConnections, // Guardar todas las conexiones
+//       createdAt: new Date().toISOString()
+//     };
     
-    const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
+//     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
     
-    if (result.success) {
-      Alert.alert(t('success'), t('networkMapSaved'), [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Dashboard')
-        }
-      ]);
-    } else {
-      // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+//     if (result.success) {
+//       Alert.alert(t('success'), t('networkMapSaved'), [
+//         {
+//           text: 'OK',
+//           onPress: () => navigation.navigate('Dashboard')
+//         }
+//       ]);
+//     } else {
+//       // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+//       showNotification(t('couldNotSaveNetworkMap'), 'error');
+//     }
+//   } catch (error) {
+//     // // console.log(t('errorSavingNetworkMap'), error);
+//     showNotification(t('couldNotSaveNetworkMap'), 'error');
+//     // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+//   }
+// };
+  const saveNetworkMap = async (name) => {
+    try {
+      // Obtener todas las conexiones (automáticas + manuales)
+      const autoConnections = getConnections();
+      const allConnections = [...autoConnections, ...connections];
+      
+      const networkMapData = {
+        name: name, // Usar el nombre proporcionado
+        projectId,
+        nodes: nodes,
+        connections: allConnections, // Guardar todas las conexiones
+        createdAt: new Date().toISOString()
+      };
+      
+      const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
+      
+      if (result.success) {
+        Alert.alert(t('success'), t('networkMapSaved'), [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Dashboard')
+          }
+        ]);
+      } else {
+        showNotification(t('couldNotSaveNetworkMap'), 'error');
+      }
+    } catch (error) {
       showNotification(t('couldNotSaveNetworkMap'), 'error');
     }
-  } catch (error) {
-    // // console.log(t('errorSavingNetworkMap'), error);
-    showNotification(t('couldNotSaveNetworkMap'), 'error');
-    // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
-  }
-};
+  };
   
   // const loadSavedNetworkMap = async () => {
   //   try {
@@ -1987,7 +2010,7 @@ const getColorHexCode = (colorName) => {
       </View>
 
       {/* Botón de guardar */}
-      <TouchableOpacity style={[styles.saveButton, {backgroundColor: theme.success}]} onPress={saveNetworkMap}>
+      <TouchableOpacity style={[styles.saveButton, {backgroundColor: theme.success}]} onPress={openSaveMapModal}>
         <Ionicons name="save" size={24} color="#ffffff" />
         <Text style={styles.saveButtonText}>{t('saveNetwork')}</Text>
       </TouchableOpacity>
@@ -2269,6 +2292,61 @@ const getColorHexCode = (colorName) => {
                 />
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal para ingresar nombre del mapa */}
+      <Modal
+        visible={showNameModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNameModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, {backgroundColor: theme.white}]}>
+            <View style={[styles.modalHeader, {borderBottomColor: theme.border}]}>
+              <Text style={[styles.modalTitle, {color: theme.text}]}>
+                {t('nameYourMap')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowNameModal(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={[styles.label, {color: theme.text}]}>
+                {t('enterMapName')}
+              </Text>
+              <TextInput
+                style={[styles.input, {borderColor: theme.border, color: theme.text}]}
+                value={mapName}
+                onChangeText={setMapName}
+                placeholder={t('mapNamePlaceholder')}
+                autoFocus={true}
+              />
+            </View>
+
+            <View style={[styles.modalFooter, {borderTopColor: theme.border}]}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowNameModal(false)}
+              >
+                <Text style={[styles.cancelButtonText, {color: theme.lightText}]}>
+                  {t('cancel')}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.saveModalButton, {backgroundColor: theme.success}]}
+                onPress={saveNetworkMapWithName}
+                disabled={!mapName.trim()}
+              >
+                <Text style={styles.saveModalButtonText}>
+                  {t('save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2876,6 +2954,65 @@ notificationContainer: {
   },
   notificationClose: {
     padding: 5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: 15,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    padding: 15,
+    borderTopWidth: 1,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+  },
+  cancelButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+  },
+  saveModalButton: {
+    borderRadius: 5,
+    padding: 10,
+  },
+  saveModalButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -9,8 +9,8 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useApp } from '../../components/context/AppContext'; // Ajusta la ruta
-import { useDevice } from '../../components/context/DeviceContext';
+import { useApp } from '../context/AppContext'; // Ajusta la ruta
+import { useDevice } from '../context/DeviceContext';
 
 const Settings = ({ navigation, device,  }) => {
   const { language, theme, isDarkMode, t, changeLanguage, changeTheme } = useApp();

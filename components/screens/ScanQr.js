@@ -12,8 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../../components/context/AppContext';
-import { useDevice } from '../../components/context/DeviceContext';
+import { useApp } from '../context/AppContext';
+import { useDevice } from '../context/DeviceContext';
 
 const ScanQr = ({ navigation }) => {
   const { topInset } = useDevice;

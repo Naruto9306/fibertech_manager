@@ -16,9 +16,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useApp } from '../../components/context/AppContext';
+import { useApp } from '../context/AppContext';
 import { useTranslation } from '../hooks/useTranslation';
-import { useDevice } from '../../components/context/DeviceContext';
+import { useDevice } from '../context/DeviceContext';
 
 const CreateMaintenance = ({ navigation, route, device, theme }) => {
   const [formData, setFormData] = useState({

@@ -13,8 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { DeviceConfigService, FiberConfigService } from '../../service/storage';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../../components/context/AppContext';
-import { useDevice } from '../../components/context/DeviceContext';
+import { useApp } from '../context/AppContext';
+import { useDevice } from '../context/DeviceContext';
 
 const ConnectivityDevices = ({ route, navigation, theme }) => {
   const { projectId } = route.params;
