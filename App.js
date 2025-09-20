@@ -5,6 +5,8 @@ import { NativeBaseProvider } from 'native-base';
 import { AppProvider, useApp } from './components/context/AppContext';
 import { withResponsive } from './components/hoc/withResponsive';
 import AppNavigator from './components/navigation/AppNavigator'; // tu stack
+import { StatusBar } from 'react-native';
+import { DeviceProvider } from './components/context/DeviceContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,17 +37,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <DeviceProvider>
       <AppProvider>
         <NativeBaseProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              {wrappedScreens.map((s) => (
-                <Stack.Screen key={s.name} name={s.name} component={s.component} />
-              ))}
-            </Stack.Navigator>
+            <StatusBar barStyle="dark-content" />
+            <AppNavigator />
           </NavigationContainer>
         </NativeBaseProvider>
       </AppProvider>
+      </DeviceProvider>
     </SafeAreaProvider>
   );
 }

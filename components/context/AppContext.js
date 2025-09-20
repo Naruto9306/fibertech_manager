@@ -1,6 +1,6 @@
 // contexts/AppContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     initializeApp();
     // checkAuthentication();
-    // loadThemePreference();
+    loadThemePreference();
   }, []);
 
    const initializeApp = async () => {
@@ -46,9 +46,9 @@ export const AppProvider = ({ children }) => {
         AsyncStorage.getItem('@theme_preference'),
         AsyncStorage.getItem('@language_preference')
       ]);
-
       // Establecer estados
-      setIsAuthenticated(authStatus === 'true');
+      setIsAuthenticated(false);
+      setIsLoading(false);
       
       if (themePreference) {
         setTheme(themePreference);
@@ -63,6 +63,25 @@ export const AppProvider = ({ children }) => {
     } finally {
       // Solo un setTimeout para isLoading
       setTimeout(() => setIsLoading(false), 1000);
+    }
+  };
+
+  const login = async (username, password) => {
+    setIsLoading(true);
+    try {
+      if (username.toLowerCase() !== 'admin' || password !== '123456') {
+        Alert.alert(t('error'), t('incorrectCredentials'));
+        setIsLoading(false);
+        return;
+      }
+      await AsyncStorage.setItem('@user_authenticated', 'true');
+      await AsyncStorage.setItem('@user_username', username);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      setIsAuthenticated(false);
+      setIsLoading(false);
     }
   };
 
@@ -91,7 +110,9 @@ export const AppProvider = ({ children }) => {
   const loadThemePreference = async () => {
     try {
       const themePreference = await AsyncStorage.getItem('@theme_preference');
-      setIsDarkMode(themePreference === 'dark');
+      if (themePreference) {
+        setTheme(themePreference);
+      }
     } catch (error) {
       console.error('Error loading theme preference:', error);
     }
@@ -127,7 +148,7 @@ export const AppProvider = ({ children }) => {
       handleData: 'How we handle your data',
       termsService: 'Terms of Service',
       appUsageTerms: 'App usage terms',
-      createProject: 'Create Project',
+      createProject: 'Projects',
       editProject: 'Edit Project',
     scanQR: 'Scan QR',
     createMaintenance: 'Create Maintenance',
@@ -220,7 +241,7 @@ export const AppProvider = ({ children }) => {
   attachFile: 'Attach File',
   
   // Botones de acción
-  generateQR: 'Generate QR',
+  generateQR: 'QR',
   share: 'Share',
   save: 'Save',
   update: 'Update',
@@ -304,6 +325,7 @@ export const AppProvider = ({ children }) => {
   // Alertas y mensajes
   selectAtLeastOneDevice: 'Please select at least one device',
   configurationSaved: 'Configuration saved successfully!',
+  configurationSaved1: 'Configuration saved successfully! To open the network map, you must acquire the Google Maps APY_KEY.',
   failedToSaveConfig: 'Failed to save configuration',
   ok: 'OK',
   permissionDenied: 'Permission denied',
@@ -549,7 +571,7 @@ userRequired: 'User is requerid',
       handleData: 'Cómo manejamos tus datos',
       termsService: 'Términos de Servicio',
       appUsageTerms: 'Términos de uso de la app',
-      createProject: 'Crear Proyecto',
+      createProject: 'Proyectos',
       editProject: 'Edit Project',
     scanQR: 'Escanear QR',
     createMaintenance: 'Crear Mantenimiento',
@@ -584,7 +606,9 @@ userRequired: 'User is requerid',
     employeeId: 'ID de Empleado',
     joinDate: 'Fecha de Ingreso',
     status: 'Estado',
+    next: 'Next',
     completed: 'Completados',
+    attachFile: 'Cargar archivo',
     active: 'Activos',
     rating: 'Calificación',
     actions: 'Acciones',
@@ -599,14 +623,14 @@ userRequired: 'User is requerid',
     changePasswordComingSoon: '¡Funcionalidad de cambio de contraseña próximamente!',
     helpSupportComingSoon: '¡Funcionalidad de ayuda y soporte próximamente!',
     privacyPolicyComingSoon: '¡Documentación de política de privacidad próximamente!',
-    propertyInformation : 'Información de la Propiedad',
+    propertyInformation : 'Información del proyecto',
   unitInformation     : 'Información de Unidades',
   projectType  : 'Tipo de Proyecto',
   attachments  : 'Adjuntos',
   editProject  : 'Editar Proyecto',
   // Campos del formulario
   propertyName: 'Nombre del proyecto',
-  propertyAddress: 'Dirección de la propiedad',
+  propertyAddress: 'Dirección del proyecto',
   city: 'Ciudad',
   state: 'Estado',
   description: 'Descripción',
@@ -632,7 +656,7 @@ userRequired: 'User is requerid',
   townhome: 'Casa townhouse',
   singleFamily: 'Casa unifamiliar',
   // Botones de acción
-  generateQR: 'Generar QR',
+  generateQR: 'QR',
   share: 'Compartir',
   save: 'Guardar',
   update: 'Actualizar',
@@ -716,6 +740,7 @@ userRequired: 'User is requerid',
   // Alertas y mensajes
   selectAtLeastOneDevice: 'Por favor selecciona al menos un dispositivo',
   configurationSaved: '¡Configuración guardada exitosamente!',
+  configurationSaved1: '¡Configuración guardada exitosamente!, Para abrir el mapa de la red, debe adquirir la APY_KEY de Google Maps.',
   failedToSaveConfig: 'Error al guardar la configuración',
   ok: 'OK',
   permissionDenied: 'Permiso denegado',
@@ -930,6 +955,7 @@ userRequired: 'Usuario es requerido',
   confirmLogoutMessage: '¿Estás seguro de que quieres cerrar sesión?',
   cancel: 'Cancelar',
   logoutError: 'Error al cerrar sesión',
+  next: 'Siguiente'
     }
   };
 
@@ -937,12 +963,24 @@ userRequired: 'Usuario es requerido',
     return translations[language]?.[key] || key;
   };
 
-  const changeLanguage = (newLanguage) => {
-    setLanguage(newLanguage);
+  const changeLanguage = async (newLanguage) => {
+    try {
+      setLanguage(newLanguage);
+      await AsyncStorage.setItem('@language_preference', newLanguage);
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+      Alert.alert(t('error'), 'Error saving language preference');
+    }
   };
 
-  const changeTheme = (newTheme) => {
-    setTheme(newTheme);
+  const changeTheme = async (newTheme) => {
+    try {
+      setTheme(newTheme);
+      await AsyncStorage.setItem('@theme_preference', newTheme);
+    } catch (error) {
+      console.error('Error saving theme preference:', error);
+      Alert.alert(t('error'), 'Error saving theme preference');
+    }
   };
 
   const value = {
@@ -955,7 +993,9 @@ userRequired: 'Usuario es requerido',
     isAuthenticated,
     setIsAuthenticated,
     isLoading,
-    logout
+    setIsLoading,
+    logout,
+    login
   };
 
   return (

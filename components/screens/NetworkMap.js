@@ -17,8 +17,9 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NodeService, DeviceConfigService, FiberConfigService, NetworkMapService } from '../../service/storage';
-import { useApp } from '../../components/context/AppContext';;
+import { useApp } from '../context/AppContext';;
 import { useTranslation } from '../hooks/useTranslation';
+import { useDevice } from '../context/DeviceContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,7 +55,9 @@ const darkTheme = {
   surface: '#2C2C2C'
 };
 
-const NetworkMap = ({ route, navigation, device }) => {
+const NetworkMap = ({ route, navigation }) => {
+
+  const { topInset } = useDevice();
   const { projectId } = route.params;
   const { isDarkMode } = useApp();
   const { t } = useTranslation();
@@ -155,7 +158,6 @@ const removeNotification = (id) => {
   };
 
   const openConfigModal = async (item, type) => {
-    // // // console.log(t('openingConfigModal'), type, item);
     
     if (!item) {
       // Alert.alert(t('error'), t('configItemNotFound'));
@@ -1758,40 +1760,80 @@ const deleteNode = async (nodeId) => {
   };
 
   // Función para obtener código hexadecimal de color basado en nombre
-  const getColorHexCode = (colorName) => {
-    if (!colorName) return '#CCCCCC';
+  // const getColorHexCode = (colorName) => {
+  //   if (!colorName) return '#CCCCCC';
     
-    // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
-    const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
+  //   // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
+  //   const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
     
-    const colorMap = {
-      'blue': '#0000FF',
-      'orange': '#FFA500',
-      'green': '#008000',
-      'brown': '#A52A2A',
-      'slate': '#708090',
-      'gray': '#808080',
-      'white': '#FFFFFF',
-      'red': '#FF0000',
-      'black': '#000000',
-      'yellow': '#FFFF00',
-      'violet': '#EE82EE',
-      'rose': '#FF007F',
-      'pink': '#FF007F',
-      'aqua': '#00FFFF'
-    };
+  //   const colorMap = {
+  //     'blue': '#0000FF',
+  //     'orange': '#FFA500',
+  //     'green': '#008000',
+  //     'brown': '#A52A2A',
+  //     'slate': '#708090',
+  //     'gray': '#808080',
+  //     'white': '#FFFFFF',
+  //     'red': '#FF0000',
+  //     'black': '#000000',
+  //     'yellow': '#FFFF00',
+  //     'violet': '#EE82EE',
+  //     'rose': '#FF007F',
+  //     'pink': '#FF007F',
+  //     'aqua': '#00FFFF'
+  //   };
     
-    const hexColor = colorMap[cleanColorName] || '#CCCCCC';
-    return hexColor;
+  //   const hexColor = colorMap[cleanColorName] || '#CCCCCC';
+  //   return hexColor;
+  // };
+  // Función para obtener código hexadecimal de color basado en nombre (soporta inglés y español)
+const getColorHexCode = (colorName) => {
+  if (!colorName) return '#CCCCCC';
+  
+  // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
+  const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
+  
+  const colorMap = {
+    // English colors
+    'blue': '#0000FF',
+    'orange': '#FFA500',
+    'green': '#008000',
+    'brown': '#A52A2A',
+    'slate': '#708090',
+    'gray': '#808080',
+    'white': '#FFFFFF',
+    'red': '#FF0000',
+    'black': '#000000',
+    'yellow': '#FFFF00',
+    'violet': '#EE82EE',
+    'rose': '#FF007F',
+    'pink': '#FF007F',
+    'aqua': '#00FFFF',
+    
+    // Spanish colors
+    'azul': '#0000FF',
+    'naranja': '#FFA500',
+    'verde': '#008000',
+    'marrón': '#A52A2A',
+    'marrÃ³n': '#A52A2A', // Por si hay problemas de encoding
+    'pizarra': '#708090',
+    'gris': '#808080',
+    'blanco': '#FFFFFF',
+    'rojo': '#FF0000',
+    'negro': '#000000',
+    'amarillo': '#FFFF00',
+    'violeta': '#EE82EE',
+    'rosa': '#FF007F',
+    'agua': '#00FFFF'
   };
+  
+  const hexColor = colorMap[cleanColorName] || '#CCCCCC';
+  return hexColor;
+};
 
   const FiberConfig = ({ fiber, onSave }) => {
     // Obtener colores estándar según el tipo de fibra
     const standardColors = getStandardFiberColors(fiber.type);
-
-    // // // console.log(t('fiberConfig'), fiber);
-    // // // console.log(t('fiberColors'), fiber.colors);
-    // // // console.log(t('standardColors'), standardColors);
     
     // Siempre mostrar TODOS los colores de la fibra, independientemente de la cantidad
     const [colors, setColors] = useState(() => {
@@ -1870,7 +1912,7 @@ const deleteNode = async (nodeId) => {
 };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.background}, { paddingTop: device.topInset }]}>
+    <View style={[styles.container, {backgroundColor: theme.background}, { paddingTop: topInset }]}>
 
       <NotificationContainer />
       <MapView

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../../components/context/AppContext'; // Ajusta la ruta
+import { useDevice } from '../../components/context/DeviceContext';
 
 const Settings = ({ navigation, device,  }) => {
   const { language, theme, isDarkMode, t, changeLanguage, changeTheme } = useApp();
@@ -17,6 +18,7 @@ const Settings = ({ navigation, device,  }) => {
   const [locationServices, setLocationServices] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
   const [dataSaving, setDataSaving] = useState(false);
+  const { topInset } = useDevice();
 
   const languages = [
     { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -92,7 +94,7 @@ const Settings = ({ navigation, device,  }) => {
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       {/* Header */}
-      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: device.topInset + 10 }]}>
+      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

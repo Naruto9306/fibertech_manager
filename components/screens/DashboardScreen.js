@@ -93,14 +93,14 @@
 //   return (
 //     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
 //       {/* Header */}
-//       <View style={[styles.header, isDarkMode && styles.darkContainer, { paddingTop: device.topInset - 10}]}>
+//       <View style={[styles.header, isDarkMode && styles.darkContainer, { paddingTop: topInset - 10}]}>
 //         <View style={styles.logoContainer}>
 //           <Image 
 //             source={require('../../assets/images/logo2.png')}
 //             style={[
 //       styles.logo,
-//       device.isSmall && { width: '60%', height: 60 },
-//       device.isTablet && { width: '40%', height: 100 }
+//       isSmall && { width: '60%', height: 60 },
+//       isTablet && { width: '40%', height: 100 }
 //     ]}
 //             resizeMode="contain"
 //           />
@@ -117,8 +117,8 @@
 //           contentContainerStyle={[
 //       styles.scrollContent,
 //       {
-//         paddingTop: device.topInset,
-//         paddingBottom: device.bottomInset,
+//         paddingTop: topInset,
+//         paddingBottom: bottomInset,
 //         backgroundColor: theme.colors.background,
 //       },
 //     ]}
@@ -355,10 +355,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../../components/context/AppContext';
-import { useDevice } from '../hooks/useDevice';
+import { useDevice } from '../../components/context/DeviceContext';
 import { ProjectService, UnitsService, ProjectTypeService, NodeService, FileService } from '../../service/storage';
 
-const DashboardScreen = ({ navigation, device, theme }) => {
+const DashboardScreen = ({ navigation, theme }) => {
   const { t } = useTranslation();
   const { isDarkMode, logout } = useApp(); // ← Ahora tenemos la función logout del contexto
   const { insets, isSmall, isTablet, topInset, bottomInset } = useDevice();
@@ -391,7 +391,7 @@ const DashboardScreen = ({ navigation, device, theme }) => {
           onPress: async () => {
             try {
               await logout(); // ← Usamos la función logout del contexto
-              navigation.replace('Login'); // ← Ya no es necesario porque logout maneja la navegación
+              // navigation.replace('Login'); // ← Ya no es necesario porque logout maneja la navegación
             } catch (error) {
               console.error('Error during logout:', error);
               Alert.alert(t('error'), t('logoutError'));
@@ -465,14 +465,14 @@ const DashboardScreen = ({ navigation, device, theme }) => {
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       {/* Header */}
-      <View style={[styles.header, isDarkMode && styles.darkContainer, { paddingTop: device.topInset - 10}]}>
+      <View style={[styles.header, isDarkMode && styles.darkContainer, { paddingTop: topInset - 20}]}>
         <View style={styles.logoContainer}>
           <Image 
             source={require('../../assets/images/logo2.png')}
             style={[
               styles.logo,
-              device.isSmall && { width: '60%', height: 60 },
-              device.isTablet && { width: '40%', height: 100 }
+              isSmall && { width: '60%', height: 60 },
+              isTablet && { width: '40%', height: 100 }
             ]}
             resizeMode="contain"
           />
@@ -486,8 +486,8 @@ const DashboardScreen = ({ navigation, device, theme }) => {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: device.topInset,
-            paddingBottom: device.bottomInset,
+            paddingTop: topInset,
+            paddingBottom: bottomInset,
             backgroundColor: isDarkMode ? '#121212' : '#f8f9fa',
           },
         ]}
@@ -564,8 +564,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#ffffff',
-    padding: 1,
-    paddingTop: 5,
+    // padding: 1,
+    // paddingTop: 5,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',

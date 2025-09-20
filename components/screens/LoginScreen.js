@@ -663,8 +663,8 @@ const createLoginSchema = (t) => yup.object({
 
 const LoginScreen = ({ navigation }) => {
   const { t } = useTranslation();
-  const { isDarkMode, setIsAuthenticated } = useApp();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isDarkMode, isAuthenticated, isLoading, setIsLoading, login } = useApp();
+  // const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef(null);
 
@@ -679,30 +679,14 @@ const LoginScreen = ({ navigation }) => {
   });
 
   const handleLogin = async (data) => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
-      // Validar credenciales
-      if (data.username.toLowerCase() !== 'admin' || data.password !== '123456') {
-        Alert.alert(t('error'), t('incorrectCredentials'));
-        setIsLoading(false);
-        return;
-      }
 
-      // Guardar estado de autenticación en AsyncStorage
-      await AsyncStorage.setItem('@user_authenticated', 'true');
-      await AsyncStorage.setItem('@user_username', data.username);
-      
-      // Actualizar contexto de autenticación
-      setIsAuthenticated(true);
-      
-      // Navegar al dashboard
-      navigation.replace('Dashboard');
+      await login(data.username, data.password);
       
     } catch (error) {
       console.error('Error en login:', error);
-      Alert.alert(t('error'), t('loginError'));
-    } finally {
-      setIsLoading(false);
+      // Alert.alert(t('error'), t('loginError'));
     }
   };
 

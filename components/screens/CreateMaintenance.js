@@ -18,6 +18,7 @@ import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useApp } from '../../components/context/AppContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { useDevice } from '../../components/context/DeviceContext';
 
 const CreateMaintenance = ({ navigation, route, device, theme }) => {
   const [formData, setFormData] = useState({
@@ -32,6 +33,7 @@ const CreateMaintenance = ({ navigation, route, device, theme }) => {
     notes: ''
   });
 
+  const { topInset } = useDevice();
   const { t } = useTranslation();
 const { isDarkMode } = useApp();
 
@@ -292,9 +294,9 @@ const colors = {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }, { paddingTop: device.topInset + 10 }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

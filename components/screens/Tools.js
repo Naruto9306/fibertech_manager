@@ -9,15 +9,17 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useApp } from '../../components/context/AppContext'; 
-import { useTranslation } from '../hooks/useTranslation';    
+import { useApp } from '../context/AppContext'; 
+import { useTranslation } from '../hooks/useTranslation';   
+import { useDevice } from '../context/DeviceContext'; 
 
-const Tools = ({ navigation, device, theme }) => {
+const Tools = ({ navigation, theme }) => {
   const [breakageDetection, setBreakageDetection] = useState(true);
   const [autoDistanceMeasurement, setAutoDistanceMeasurement] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [gpsTracking, setGpsTracking] = useState(true);
   const [cloudSync, setCloudSync] = useState(true);
+  const { topInset } = useDevice();
 
   const { t } = useTranslation();
 const { isDarkMode } = useApp();
@@ -78,9 +80,9 @@ const colors = {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }, { paddingTop: device.topInset + 10 }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset + 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

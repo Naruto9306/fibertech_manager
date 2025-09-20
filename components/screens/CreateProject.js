@@ -17,9 +17,11 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Picker } from '@react-native-picker/picker';
 import { ProjectService, UnitsService, ProjectTypeService, NodeService, FileService } from '../../service/storage';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../../components/context/AppContext';
+import { useApp } from '../context/AppContext';
+import { useDevice } from '../context/DeviceContext';
 
-const CreateProject = ({ navigation, route, device, theme }) => {
+const CreateProject = ({ navigation, route, theme }) => {
+  const { topInset, isTablet } = useDevice();
   const { projectId } = route.params || {};
   const isEditMode = !!projectId;
 
@@ -332,20 +334,24 @@ const CreateProject = ({ navigation, route, device, theme }) => {
         }
       }
 
-      Alert.alert('✅ ' + t('success'), t(isEditMode ? 'projectUpdated' : 'projectCreated'), [
-        {
-          text: t('configureNetwork'),
-          onPress: () => navigation.navigate('ConnectivityDevices', { 
+      navigation.navigate('ConnectivityDevices', { 
             projectId: targetProjectId 
           })
-        },
-        {
-          text: t('viewProject'),
-          onPress: () => navigation.navigate('ProjectDetail', { 
-            projectId: targetProjectId 
-          })
-        }
-      ]);
+
+      // Alert.alert('✅ ' + t('success'), t(isEditMode ? 'projectUpdated' : 'projectCreated'), [
+      //   {
+      //     text: t('configureNetwork'),
+      //     onPress: () => navigation.navigate('ConnectivityDevices', { 
+      //       projectId: targetProjectId 
+      //     })
+      //   },
+      //   {
+      //     text: t('viewProject'),
+      //     onPress: () => navigation.navigate('ProjectDetail', { 
+      //       projectId: targetProjectId 
+      //     })
+      //   }
+      // ]);
 
     } catch (error) {
       console.log('❌ Error saving project:', error);
@@ -585,7 +591,7 @@ const CreateProject = ({ navigation, route, device, theme }) => {
   return (
     <View style={[combinedStyles.container]}>
       {/* Header */}
-      <View style={[combinedStyles.header, { paddingTop: device.topInset  }]}>
+      <View style={[combinedStyles.header, { paddingTop: topInset }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -632,8 +638,8 @@ const CreateProject = ({ navigation, route, device, theme }) => {
           <Text style={combinedStyles.sectionTitle}>{t('propertyInformation')}</Text>
           
           <View style={combinedStyles.formCard}>
-            <View style={{ flex: device.isTablet ? 1 : undefined }}>
-              <Text style={[combinedStyles.label, { color: theme.colors.text }]}>{t('propertyName')} *</Text>
+            <View style={{ flex: isTablet ? 1 : undefined }}>
+              <Text style={[combinedStyles.label, { color: colors.text }]}>{t('propertyName')} *</Text>
               <TextInput
                 style={combinedStyles.input}
                 value={projectData.name}
@@ -885,7 +891,7 @@ const CreateProject = ({ navigation, route, device, theme }) => {
               ) : (
                 <>
                   <Ionicons name="save" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>{isEditMode ? t('update') : t('save')} {t('project')}</Text>
+                  <Text style={styles.actionButtonText}>{t('next')}</Text>
                 </>
               )}
             </TouchableOpacity>

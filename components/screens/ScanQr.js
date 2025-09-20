@@ -13,8 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../../components/context/AppContext';
+import { useDevice } from '../../components/context/DeviceContext';
 
-const ScanQr = ({ navigation, device, theme }) => {
+const ScanQr = ({ navigation }) => {
+  const { topInset } = useDevice;
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(true);
@@ -175,7 +177,7 @@ const ScanQr = ({ navigation, device, theme }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: device.topInset + 10 }]}>
+      <View style={[styles.header, { paddingTop: topInset }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}

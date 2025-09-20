@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../../components/context/AppContext';
+import { useApp } from '../context/AppContext';
+import { useDevice } from '../context/DeviceContext';
 
 const UserProfile = ({ navigation, device, theme }) => {
   const { t } = useTranslation();
-  const { isDarkMode } = useApp();
+  const { isDarkMode, logout } = useApp();
+  const { topInset } = useDevice();
   
   const [userData, setUserData] = useState({
     name: 'Peter P Doe',
@@ -35,23 +37,49 @@ const UserProfile = ({ navigation, device, theme }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [locationServices, setLocationServices] = useState(true);
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('logout'),
-      t('logoutConfirmation'),
-      [
-        {
-          text: t('cancel'),
-          style: 'cancel'
-        },
-        {
-          text: t('logout'),
-          onPress: () => navigation.replace('Login'),
-          style: 'destructive'
-        }
-      ]
-    );
-  };
+  // const handleLogout = () => {
+  //   Alert.alert(
+  //     t('logout'),
+  //     t('logoutConfirmation'),
+  //     [
+  //       {
+  //         text: t('cancel'),
+  //         style: 'cancel'
+  //       },
+  //       {
+  //         text: t('logout'),
+  //         onPress: () => navigation.replace('Login'),
+  //         style: 'destructive'
+  //       }
+  //     ]
+  //   );
+  // };
+
+  const handleLogout = async () => {
+      Alert.alert(
+        t('confirmLogout'),
+        t('confirmLogoutMessage'),
+        [
+          {
+            text: t('cancel'),
+            style: "cancel"
+          },
+          {
+            text: t('logout1'),
+            onPress: async () => {
+              try {
+                await logout(); // ← Usamos la función logout del contexto
+                // navigation.replace('Login'); // ← Ya no es necesario porque logout maneja la navegación
+              } catch (error) {
+                console.error('Error during logout:', error);
+                Alert.alert(t('error'), t('logoutError'));
+              }
+            },
+            style: "destructive"
+          }
+        ]
+      );
+    };
 
   const handleEditProfile = () => {
     Alert.alert(t('editProfile'), t('editProfileComingSoon'));
@@ -72,7 +100,7 @@ const UserProfile = ({ navigation, device, theme }) => {
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       {/* Header */}
-      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: device.topInset + 10 }]}>
+      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: topInset + 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -201,7 +229,7 @@ const UserProfile = ({ navigation, device, theme }) => {
           onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
-          <Text style={styles.logoutText}>{t('logout')}</Text>
+          <Text style={styles.logoutText}>{t('logout1')}</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>

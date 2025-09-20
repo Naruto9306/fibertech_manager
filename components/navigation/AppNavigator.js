@@ -20,15 +20,17 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
 
   const { isAuthenticated, isLoading } = useApp();
+  // console.log('AppNavigator - isAuthenticated:', isAuthenticated);
+  // console.log('AppNavigator - isLoading:', isLoading);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    // <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Login"
+        // initialRouteName="Login"
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#ffffff' }
@@ -89,7 +91,7 @@ const AppNavigator = () => {
         /> */}
         
       </Stack.Navigator>
-    </NavigationContainer>
+    // </NavigationContainer>
   );
 };
 
