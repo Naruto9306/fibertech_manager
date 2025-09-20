@@ -16,10 +16,31 @@ import QRCode from 'react-native-qrcode-svg';
 import * as DocumentPicker from 'expo-document-picker';
 import { Picker } from '@react-native-picker/picker';
 import { ProjectService, UnitsService, ProjectTypeService, NodeService, FileService } from '../../service/storage';
+import { useTranslation } from '../hooks/useTranslation';
+import { useApp } from '../../components/context/AppContext';
 
-const CreateProject = ({ navigation, route }) => {
+const CreateProject = ({ navigation, route, device, theme }) => {
   const { projectId } = route.params || {};
   const isEditMode = !!projectId;
+
+  const { t } = useTranslation();
+  const { isDarkMode } = useApp();
+
+  // Colores dinámicos basados en el tema
+  const colors = {
+    background: isDarkMode ? '#121212' : '#f5f7fa',
+    cardBackground: isDarkMode ? '#1e1e1e' : 'white',
+    text: isDarkMode ? '#ffffff' : '#2c3e50',
+    secondaryText: isDarkMode ? '#b0b0b0' : '#7f8c8d',
+    border: isDarkMode ? '#333333' : '#e1e8ed',
+    inputBackground: isDarkMode ? '#2a2a2a' : '#f8f9fa',
+    placeholder: isDarkMode ? '#888888' : '#a0a0a0',
+    primary: '#3498db',
+    success: '#2ecc71',
+    warning: '#f39c12',
+    danger: '#e74c3c',
+    purple: '#9b59b6'
+  };
 
   const [projectData, setProjectData] = useState({
     name: '',
@@ -61,6 +82,7 @@ const CreateProject = ({ navigation, route }) => {
     try {
       const projects = await ProjectService.getProjects();
       setExistingProjects(projects);
+      
     } catch (error) {
       console.log('Error loading projects:', error);
     }
@@ -104,15 +126,9 @@ const CreateProject = ({ navigation, route }) => {
         });
       }
 
-      // Cargar archivos adjuntos (si existe esta funcionalidad)
-      // const files = await FileService.getProjectFiles(projectId);
-      // if (files) {
-      //   setAttachedFiles(files);
-      // }
-
     } catch (error) {
       console.log('Error loading project data:', error);
-      Alert.alert('Error', 'Failed to load project data');
+      Alert.alert(t('error'), t('failedToLoadProject'));
     } finally {
       setSaving(false);
     }
@@ -170,10 +186,10 @@ const CreateProject = ({ navigation, route }) => {
           lastModified: result.lastModified
         };
         setAttachedFiles(prev => [...prev, fileInfo]);
-        Alert.alert('Success', 'File attached successfully');
+        Alert.alert(t('success'), t('fileAttachedSuccess'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to attach file: ' + error.message);
+      Alert.alert(t('error'), t('failedToAttachFile') + error.message);
     }
   };
 
@@ -210,11 +226,11 @@ const CreateProject = ({ navigation, route }) => {
   const shareProject = async () => {
     try {
       const result = await Share.share({
-        message: `FTTH Project: ${projectData.name}\nAddress: ${projectData.address}\nTotal Units: ${calculateTotalUnits()}\n\nScan the QR code for complete details`,
-        title: 'FTTH Project Details'
+        message: `${t('ftthProject')}: ${projectData.name}\n${t('address')}: ${projectData.address}\n${t('totalUnits')}: ${calculateTotalUnits()}\n\n${t('scanQRForDetails')}`,
+        title: t('ftthProjectDetails')
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to share project');
+      Alert.alert(t('error'), t('failedToShare'));
     }
   };
 
@@ -224,12 +240,14 @@ const CreateProject = ({ navigation, route }) => {
     setSaving(true);
     try {
       if (!projectData.name?.trim() || !projectData.address?.trim()) {
-        Alert.alert('Error', 'Property name and address are required');
+        Alert.alert(t('error'), t('nameAndAddressRequired'));
         setSaving(false);
         return;
       }
 
       console.log('💾 Starting save process...');
+
+      let targetProjectId = projectId; // Para modo edición
 
       if (isEditMode) {
         // Modo edición: Actualizar proyecto existente
@@ -268,16 +286,16 @@ const CreateProject = ({ navigation, route }) => {
           status: 'active'
         });
 
-        const projectId = project.id;
-        console.log('📋 Project saved with ID:', projectId);
+        targetProjectId = project.id; // Actualizar para modo creación
+        console.log('📋 Project saved with ID:', targetProjectId);
 
-        await UnitsService.saveUnitsInfo(projectId, {
+        await UnitsService.saveUnitsInfo(targetProjectId, {
           living_unit: unitsInfo.living_unit || '0',
           office_amenities: unitsInfo.office_amenities || '0',
           commercial_unit: unitsInfo.commercial_unit || '0'
         });
 
-        await ProjectTypeService.saveProjectType(projectId, {
+        await ProjectTypeService.saveProjectType(targetProjectId, {
           build_type: projectType.build_type || 'MDU',
           job_type: projectType.job_type || 'Residential',
           building_type: projectType.building_type || 'Garden Style'
@@ -285,12 +303,12 @@ const CreateProject = ({ navigation, route }) => {
 
         if (attachedFiles.length > 0) {
           for (const file of attachedFiles) {
-            await FileService.saveProjectFile(projectId, file);
+            await FileService.saveProjectFile(targetProjectId, file);
           }
         }
 
         const mdfNode = await NodeService.createNode({
-          project_id: projectId,
+          project_id: targetProjectId,
           name: 'MDF_Principal',
           type: 'MDF',
           description: 'Main Distribution Frame'
@@ -304,7 +322,7 @@ const CreateProject = ({ navigation, route }) => {
           
           for (let i = 1; i <= totalUnits; i++) {
             await NodeService.createNode({
-              project_id: projectId,
+              project_id: targetProjectId,
               name: `Unit_${i}`,
               type: 'unit',
               description: `Living unit ${i}`,
@@ -314,20 +332,24 @@ const CreateProject = ({ navigation, route }) => {
         }
       }
 
-      Alert.alert('✅ Success', `Project ${isEditMode ? 'updated' : 'created'} successfully!`, [
+      Alert.alert('✅ ' + t('success'), t(isEditMode ? 'projectUpdated' : 'projectCreated'), [
         {
-          text: 'Configure Network',
-          onPress: () => navigation.navigate('ConnectivityDevices', { projectId: isEditMode ? projectId : project.id })
+          text: t('configureNetwork'),
+          onPress: () => navigation.navigate('ConnectivityDevices', { 
+            projectId: targetProjectId 
+          })
         },
         {
-          text: 'View Project',
-          onPress: () => navigation.navigate('ProjectDetail', { projectId: isEditMode ? projectId : project.id })
+          text: t('viewProject'),
+          onPress: () => navigation.navigate('ProjectDetail', { 
+            projectId: targetProjectId 
+          })
         }
       ]);
 
     } catch (error) {
       console.log('❌ Error saving project:', error);
-      Alert.alert('❌ Error', `Failed to ${isEditMode ? 'update' : 'save'} project. Please try again.`);
+      Alert.alert('❌ ' + t('error'), t(isEditMode ? 'failedToUpdate' : 'failedToSave'));
     } finally {
       setSaving(false);
     }
@@ -365,18 +387,213 @@ const CreateProject = ({ navigation, route }) => {
     navigation.setParams({ projectId: null });
   };
 
-return (
-    <View style={styles.container}>
+  // Estilos dinámicos que responden al tema
+  const dynamicStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      top: 10,
+      backgroundColor: colors.cardBackground,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+      zIndex: 10,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    section: {
+      marginBottom: 25,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 15,
+      paddingLeft: 5,
+    },
+    formCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 14,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      padding: 14,
+      fontSize: 16,
+      backgroundColor: colors.inputBackground,
+      color: colors.text,
+    },
+    totalUnits: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: 15,
+      marginTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    totalLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    totalValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    pickerContainer: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.inputBackground,
+      overflow: 'hidden',
+    },
+    attachButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 10,
+      padding: 14,
+      backgroundColor: isDarkMode ? 'rgba(52, 152, 219, 0.2)' : 'rgba(52, 152, 219, 0.1)',
+      gap: 8,
+    },
+    attachButtonText: {
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 16,
+    },
+    fileItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 12,
+      backgroundColor: colors.inputBackground,
+      borderRadius: 8,
+      marginBottom: 10,
+    },
+    fileName: {
+      fontSize: 15,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    fileSize: {
+      fontSize: 13,
+      color: colors.secondaryText,
+      marginTop: 2,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      backgroundColor: colors.cardBackground,
+      padding: 25,
+      borderRadius: 16,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    qrContainer: {
+      alignItems: 'center',
+      marginVertical: 20,
+      padding: 15,
+      backgroundColor: 'white',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    qrDescription: {
+      fontSize: 15,
+      color: colors.secondaryText,
+      textAlign: 'center',
+      marginBottom: 20,
+      lineHeight: 22,
+    },
+    projectItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 15,
+    },
+    projectName: {
+      fontSize: 16,
+      // fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    projectAddress: {
+      fontSize: 14,
+      color: colors.secondaryText,
+    },
+    noProjectsText: {
+      textAlign: 'center',
+      fontSize: 16,
+      color: colors.secondaryText,
+      padding: 30,
+    },
+  });
+
+  // Combinar estilos estáticos con dinámicos
+  const combinedStyles = {
+    ...styles,
+    ...dynamicStyles
+  };
+
+  return (
+    <View style={[combinedStyles.container]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[combinedStyles.header, { paddingTop: device.topInset  }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isEditMode ? 'Edit Project' : 'Create New Project'}
+        <Text style={combinedStyles.headerTitle}>
+          {isEditMode ? t('editProject') : t('createProject')}
         </Text>
         <View style={styles.headerActions}>
           {isEditMode && (
@@ -385,7 +602,7 @@ return (
               style={styles.clearButton}
               disabled={saving}
             >
-              <Ionicons name="add" size={24} color="#3498db" />
+              <Ionicons name="add" size={24} color={colors.primary} />
             </TouchableOpacity>
           )}
           <TouchableOpacity 
@@ -393,13 +610,13 @@ return (
             style={styles.selectProjectButton}
             disabled={saving}
           >
-            <Ionicons name="folder-open" size={24} color="#3498db" />
+            <Ionicons name="folder-open" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={saveProjectAndCreateGraph} disabled={saving}>
             <Ionicons 
               name="save-outline" 
               size={24} 
-              color={saving ? '#bdc3c7' : '#3498db'} 
+              color={saving ? colors.secondaryText : colors.primary} 
             />
           </TouchableOpacity>
         </View>
@@ -408,147 +625,147 @@ return (
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={combinedStyles.scrollContent}
       >
         {/* Property Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Property Information</Text>
+        <View style={combinedStyles.section}>
+          <Text style={combinedStyles.sectionTitle}>{t('propertyInformation')}</Text>
           
-          <View style={styles.formCard}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Property Name *</Text>
+          <View style={combinedStyles.formCard}>
+            <View style={{ flex: device.isTablet ? 1 : undefined }}>
+              <Text style={[combinedStyles.label, { color: theme.colors.text }]}>{t('propertyName')} *</Text>
               <TextInput
-                style={styles.input}
+                style={combinedStyles.input}
                 value={projectData.name}
                 onChangeText={(text) => handleInputChange('name', text)}
-                placeholder="Enter property name"
+                placeholder={t('propertyName')}
                 editable={!saving}
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={colors.placeholder}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Property Address *</Text>
+              <Text style={combinedStyles.label}>{t('propertyAddress')} *</Text>
               <TextInput
-                style={styles.input}
+                style={combinedStyles.input}
                 value={projectData.address}
                 onChangeText={(text) => handleInputChange('address', text)}
-                placeholder="Enter address"
+                placeholder={t('enterAddress')}
                 editable={!saving}
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={colors.placeholder}
               />
             </View>
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>City</Text>
+                <Text style={combinedStyles.label}>{t('city')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={combinedStyles.input}
                   value={projectData.city}
                   onChangeText={(text) => handleInputChange('city', text)}
-                  placeholder="City"
+                  placeholder={t('city')}
                   editable={!saving}
-                  placeholderTextColor="#a0a0a0"
+                  placeholderTextColor={colors.placeholder}
                 />
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>State</Text>
+                <Text style={combinedStyles.label}>{t('state')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={combinedStyles.input}
                   value={projectData.state}
                   onChangeText={(text) => handleInputChange('state', text)}
-                  placeholder="State"
+                  placeholder={t('state')}
                   maxLength={2}
                   editable={!saving}
-                  placeholderTextColor="#a0a0a0"
+                  placeholderTextColor={colors.placeholder}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={combinedStyles.label}>{t('description')}</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[combinedStyles.input, styles.textArea]}
                 value={projectData.description}
                 onChangeText={(text) => handleInputChange('description', text)}
-                placeholder="Project description"
+                placeholder={t('projectDescription')}
                 multiline={true}
                 editable={!saving}
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={colors.placeholder}
               />
             </View>
           </View>
         </View>
 
         {/* Unit Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Unit Information</Text>
+        <View style={combinedStyles.section}>
+          <Text style={combinedStyles.sectionTitle}>{t('unitInformation')}</Text>
           
-          <View style={styles.formCard}>
+          <View style={combinedStyles.formCard}>
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>Living Units</Text>
+                <Text style={combinedStyles.label}>{t('livingUnits')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={combinedStyles.input}
                   value={unitsInfo.living_unit}
                   onChangeText={(text) => handleUnitsChange('living_unit', text)}
                   placeholder="0"
                   keyboardType="numeric"
                   editable={!saving}
-                  placeholderTextColor="#a0a0a0"
+                  placeholderTextColor={colors.placeholder}
                 />
               </View>
 
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>Offices/Amenities</Text>
+                <Text style={combinedStyles.label}>{t('officesAmenities')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={combinedStyles.input}
                   value={unitsInfo.office_amenities}
                   onChangeText={(text) => handleUnitsChange('office_amenities', text)}
                   placeholder="0"
                   keyboardType="numeric"
                   editable={!saving}
-                  placeholderTextColor="#a0a0a0"
+                  placeholderTextColor={colors.placeholder}
                 />
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Commercial Units</Text>
+                <Text style={combinedStyles.label}>{t('commercialUnits')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={combinedStyles.input}
                   value={unitsInfo.commercial_unit}
                   onChangeText={(text) => handleUnitsChange('commercial_unit', text)}
                   placeholder="0"
                   keyboardType="numeric"
                   editable={!saving}
-                  placeholderTextColor="#a0a0a0"
+                  placeholderTextColor={colors.placeholder}
                 />
               </View>
             </View>
 
-            <View style={styles.totalUnits}>
-              <Text style={styles.totalLabel}>Total Units:</Text>
-              <Text style={styles.totalValue}>{calculateTotalUnits()}</Text>
+            <View style={combinedStyles.totalUnits}>
+              <Text style={combinedStyles.totalLabel}>{t('totalUnits')}:</Text>
+              <Text style={combinedStyles.totalValue}>{calculateTotalUnits()}</Text>
             </View>
           </View>
         </View>
 
         {/* Project Type */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Project Type</Text>
+        <View style={combinedStyles.section}>
+          <Text style={combinedStyles.sectionTitle}>{t('projectType')}</Text>
           
-          <View style={styles.formCard}>
+          <View style={combinedStyles.formCard}>
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>Build Type</Text>
-                <View style={[styles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
+                <Text style={combinedStyles.label}>{t('buildType')}</Text>
+                <View style={[combinedStyles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
                   <Picker
                     selectedValue={projectType.build_type}
                     onValueChange={(value) => handleTypeChange('build_type', value)}
                     style={Platform.OS === 'ios' ? styles.pickerIOS : styles.picker}
                     enabled={!saving}
-                    dropdownIconColor="#3498db"
+                    dropdownIconColor={colors.primary}
                   >
                     <Picker.Item label="MDU" value="MDU" />
                     <Picker.Item label="SDU" value="SDU" />
@@ -558,38 +775,38 @@ return (
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Job Type</Text>
-                <View style={[styles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
+                <Text style={combinedStyles.label}>{t('jobType')}</Text>
+                <View style={[combinedStyles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
                   <Picker
                     selectedValue={projectType.job_type}
                     onValueChange={(value) => handleTypeChange('job_type', value)}
                     style={Platform.OS === 'ios' ? styles.pickerIOS : styles.picker}
                     enabled={!saving}
-                    dropdownIconColor="#3498db"
+                    dropdownIconColor={colors.primary}
                   >
-                    <Picker.Item label="Residential" value="Residential" />
-                    <Picker.Item label="Commercial" value="Commercial" />
-                    <Picker.Item label="Mixed Use" value="Mixed Use" />
+                    <Picker.Item label={t('residential')} value="Residential" />
+                    <Picker.Item label={t('commercial')} value="Commercial" />
+                    <Picker.Item label={t('mixedUse')} value="Mixed Use" />
                   </Picker>
                 </View>
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Building Type</Text>
-              <View style={[styles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
+              <Text style={combinedStyles.label}>{t('buildingType')}</Text>
+              <View style={[combinedStyles.pickerContainer, Platform.OS === 'ios' && styles.pickerContainerIOS]}>
                 <Picker
                   selectedValue={projectType.building_type}
                   onValueChange={(value) => handleTypeChange('building_type', value)}
                   style={Platform.OS === 'ios' ? styles.pickerIOS : styles.picker}
                   enabled={!saving}
-                  dropdownIconColor="#3498db"
+                  dropdownIconColor={colors.primary}
                 >
-                  <Picker.Item label="Garden Style" value="Garden Style" />
-                  <Picker.Item label="Mid Rise" value="Mid Rise" />
-                  <Picker.Item label="High Rise" value="High Rise" />
-                  <Picker.Item label="Townhome" value="Townhome" />
-                  <Picker.Item label="Single Family" value="Single Family" />
+                  <Picker.Item label={t('gardenStyle')} value="Garden Style" />
+                  <Picker.Item label={t('midRise')} value="Mid Rise" />
+                  <Picker.Item label={t('highRise')} value="High Rise" />
+                  <Picker.Item label={t('townhome')} value="Townhome" />
+                  <Picker.Item label={t('singleFamily')} value="Single Family" />
                 </Picker>
               </View>
             </View>
@@ -597,35 +814,35 @@ return (
         </View>
 
         {/* Attachments */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Attachments</Text>
+        <View style={combinedStyles.section}>
+          <Text style={combinedStyles.sectionTitle}>{t('attachments')}</Text>
           
-          <View style={styles.formCard}>
+          <View style={combinedStyles.formCard}>
             <TouchableOpacity 
-              style={[styles.attachButton, saving && styles.buttonDisabled]}
+              style={[combinedStyles.attachButton, saving && styles.buttonDisabled]}
               onPress={attachFile}
               disabled={saving}
             >
-              <Ionicons name="attach" size={20} color="#3498db" />
-              <Text style={styles.attachButtonText}>Attach File</Text>
+              <Ionicons name="attach" size={20} color={colors.primary} />
+              <Text style={combinedStyles.attachButtonText}>{t('attachFile')}</Text>
             </TouchableOpacity>
 
             {attachedFiles.length > 0 && (
               <View style={styles.attachmentsList}>
                 {attachedFiles.map((file, index) => (
-                  <View key={index} style={styles.fileItem}>
+                  <View key={index} style={combinedStyles.fileItem}>
                     <View style={styles.fileInfo}>
-                      <Ionicons name="document-text" size={20} color="#7f8c8d" />
+                      <Ionicons name="document-text" size={20} color={colors.secondaryText} />
                       <View style={styles.fileDetails}>
-                        <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                        <Text style={styles.fileSize}>{formatFileSize(file.size)}</Text>
+                        <Text style={combinedStyles.fileName} numberOfLines={1}>{file.name}</Text>
+                        <Text style={combinedStyles.fileSize}>{formatFileSize(file.size)}</Text>
                       </View>
                     </View>
                     <TouchableOpacity 
                       onPress={() => removeFile(index)}
                       disabled={saving}
                     >
-                      <Ionicons name="close-circle" size={20} color="#e74c3c" />
+                      <Ionicons name="close-circle" size={20} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -635,7 +852,7 @@ return (
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.section}>
+        <View style={combinedStyles.section}>
           <View style={styles.actionButtons}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.qrButton, saving && styles.buttonDisabled]}
@@ -643,7 +860,7 @@ return (
               disabled={saving}
             >
               <Ionicons name="qr-code" size={20} color="white" />
-              <Text style={styles.actionButtonText}>Generate QR</Text>
+              <Text style={styles.actionButtonText}>{t('generateQR')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -652,7 +869,7 @@ return (
               disabled={saving}
             >
               <Ionicons name="share-social" size={20} color="white" />
-              <Text style={styles.actionButtonText}>Share</Text>
+              <Text style={styles.actionButtonText}>{t('share')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -663,12 +880,12 @@ return (
               {saving ? (
                 <>
                   <Ionicons name="refresh" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>Saving...</Text>
+                  <Text style={styles.actionButtonText}>{t('saving')}...</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="save" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>{isEditMode ? 'Update' : 'Save'} Project</Text>
+                  <Text style={styles.actionButtonText}>{isEditMode ? t('update') : t('save')} {t('project')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -683,29 +900,29 @@ return (
         visible={qrModalVisible}
         onRequestClose={() => setQrModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={combinedStyles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Project QR Code</Text>
+            <View style={combinedStyles.modalContent}>
+              <Text style={combinedStyles.modalTitle}>{t('projectQRCode')}</Text>
               
-              <View style={styles.qrContainer}>
+              <View style={combinedStyles.qrContainer}>
                 <QRCode
                   value={generateProjectQR()}
                   size={200}
-                  color="#2c3e50"
+                  color={colors.text}
                   backgroundColor="white"
                 />
               </View>
               
-              <Text style={styles.qrDescription}>
-                Scan this QR code to quickly access project details
+              <Text style={combinedStyles.qrDescription}>
+                {t('scanQRDescription')}
               </Text>
               
               <TouchableOpacity
                 style={styles.closeModalButton}
                 onPress={() => setQrModalVisible(false)}
               >
-                <Text style={styles.closeModalText}>Close</Text>
+                <Text style={styles.closeModalText}>{t('close')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -719,29 +936,29 @@ return (
         visible={projectSelectorVisible}
         onRequestClose={() => setProjectSelectorVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={combinedStyles.modalOverlay}>
           <View style={[styles.modalContainer, styles.selectorModal]}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Project to Edit</Text>
+            <View style={combinedStyles.modalContent}>
+              <Text style={combinedStyles.modalTitle}>{t('selectProjectToEdit')}</Text>
               
               <ScrollView style={styles.projectList}>
                 {existingProjects.map((project) => (
                   <TouchableOpacity
                     key={project.id}
-                    style={styles.projectItem}
+                    style={combinedStyles.projectItem}
                     onPress={() => selectProjectToEdit(project)}
                   >
-                    <Ionicons name="business" size={24} color="#3498db" />
+                    <Ionicons name="business" size={24} color={colors.primary} />
                     <View style={styles.projectInfo}>
-                      <Text style={styles.projectName}>{project.name}</Text>
-                      <Text style={styles.projectAddress}>{project.address}</Text>
+                      <Text style={combinedStyles.projectName}>{project.name}</Text>
+                      <Text style={combinedStyles.projectAddress}>{project.address}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
+                    <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
                   </TouchableOpacity>
                 ))}
                 
                 {existingProjects.length === 0 && (
-                  <Text style={styles.noProjectsText}>No projects found</Text>
+                  <Text style={combinedStyles.noProjectsText}>{t('noProjectsFound')}</Text>
                 )}
               </ScrollView>
               
@@ -749,7 +966,7 @@ return (
                 style={[styles.closeModalButton, styles.cancelButton]}
                 onPress={() => setProjectSelectorVisible(false)}
               >
-                <Text style={styles.closeModalText}>Cancel</Text>
+                <Text style={styles.closeModalText}>{t('cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -759,35 +976,10 @@ return (
   );
 };
 
+// Estilos base (sin colores específicos para mantener la estructura)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f7fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    top: 10,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e8ed',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    zIndex: 10,
-  },
   backButton: {
     padding: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2c3e50',
   },
   headerActions: {
     flexDirection: 'row',
@@ -803,47 +995,8 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  section: {
-    marginBottom: 25,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2c3e50',
-    marginBottom: 15,
-    paddingLeft: 5,
-  },
-  formCard: {
-    backgroundColor: 'white',
-    borderRadius: 14,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
   inputGroup: {
     marginBottom: 18,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#34495e',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#dce4ec',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-    color: '#2c3e50',
   },
   textArea: {
     height: 100,
@@ -853,70 +1006,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  totalUnits: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 15,
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#3498db',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#dce4ec',
-    borderRadius: 10,
-    backgroundColor: '#f8f9fa',
-    overflow: 'hidden',
-  },
   pickerContainerIOS: {
     height: 50,
     justifyContent: 'center',
   },
   picker: {
     height: 50,
-    color: '#2c3e50',
   },
   pickerIOS: {
-    color: '#2c3e50',
-  },
-  attachButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#3498db',
-    borderRadius: 10,
-    padding: 14,
-    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-    gap: 8,
-  },
-  attachButtonText: {
-    color: '#3498db',
-    fontWeight: '600',
-    fontSize: 16,
   },
   attachmentsList: {
     marginTop: 15,
-  },
-  fileItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 10,
   },
   fileInfo: {
     flexDirection: 'row',
@@ -926,16 +1026,6 @@ const styles = StyleSheet.create({
   },
   fileDetails: {
     flex: 1,
-  },
-  fileName: {
-    fontSize: 15,
-    color: '#2c3e50',
-    fontWeight: '500',
-  },
-  fileSize: {
-    fontSize: 13,
-    color: '#7f8c8d',
-    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -971,13 +1061,6 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.5,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   modalContainer: {
     width: '100%',
     maxWidth: 400,
@@ -986,34 +1069,6 @@ const styles = StyleSheet.create({
   },
   selectorModal: {
     maxHeight: '80%',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 25,
-    borderRadius: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2c3e50',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  qrContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-    padding: 15,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ecf0f1',
-  },
-  qrDescription: {
-    fontSize: 15,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
   },
   closeModalButton: {
     backgroundColor: '#3498db',
@@ -1034,32 +1089,8 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     marginBottom: 20,
   },
-  projectItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
-    gap: 15,
-  },
   projectInfo: {
     flex: 1,
-  },
-  projectName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  projectAddress: {
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  noProjectsText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#7f8c8d',
-    padding: 30,
   },
 });
 

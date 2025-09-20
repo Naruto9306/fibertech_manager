@@ -10,8 +10,13 @@ import {
   Switch
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../hooks/useTranslation';
+import { useApp } from '../../components/context/AppContext';
 
-const UserProfile = ({ navigation }) => {
+const UserProfile = ({ navigation, device, theme }) => {
+  const { t } = useTranslation();
+  const { isDarkMode } = useApp();
+  
   const [userData, setUserData] = useState({
     name: 'Peter P Doe',
     email: 'peter.doe@fibraoptica.com',
@@ -32,15 +37,15 @@ const UserProfile = ({ navigation }) => {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('logout'),
+      t('logoutConfirmation'),
       [
         {
-          text: 'Cancel',
+          text: t('cancel'),
           style: 'cancel'
         },
         {
-          text: 'Logout',
+          text: t('logout'),
           onPress: () => navigation.replace('Login'),
           style: 'destructive'
         }
@@ -49,24 +54,32 @@ const UserProfile = ({ navigation }) => {
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Profile editing functionality coming soon!');
+    Alert.alert(t('editProfile'), t('editProfileComingSoon'));
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Password change functionality coming soon!');
+    Alert.alert(t('changePassword'), t('changePasswordComingSoon'));
+  };
+
+  const handleHelpSupport = () => {
+    Alert.alert(t('helpSupport'), t('helpSupportComingSoon'));
+  };
+
+  const handlePrivacyPolicy = () => {
+    Alert.alert(t('privacyPolicy'), t('privacyPolicyComingSoon'));
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isDarkMode && styles.darkHeader, { paddingTop: device.topInset + 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#ffffff" : "#2c3e50"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>User Profile</Text>
+        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>{t('userProfile')}</Text>
         <TouchableOpacity onPress={handleEditProfile}>
           <Ionicons name="create-outline" size={24} color="#3498db" />
         </TouchableOpacity>
@@ -78,7 +91,7 @@ const UserProfile = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Profile Section */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection, isDarkMode && styles.darkCard]}>
           <View style={styles.avatarContainer}>
             <Image
               source={{ uri: 'https://media.istockphoto.com/id/1479759169/es/foto/ciencia-de-datos-y-tecnolog%C3%ADa-de-big-data-computaci%C3%B3n-de-cient%C3%ADficos-de-datos-analizando-y.webp?s=2048x2048&w=is&k=20&c=UBdb8KhnG1coLtUfIdSXHQF0FE7sUncrSxlQ3WEZoJg=' }}
@@ -89,67 +102,67 @@ const UserProfile = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.userName}>{userData.name}</Text>
+          <Text style={[styles.userName, isDarkMode && styles.darkText]}>{userData.name}</Text>
           <Text style={styles.userPosition}>{userData.position}</Text>
-          <Text style={styles.userCompany}>{userData.company}</Text>
+          <Text style={[styles.userCompany, isDarkMode && styles.darkSubtext]}>{userData.company}</Text>
 
           {/* Stats Cards */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userData.projectsCompleted}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{userData.projectsCompleted}</Text>
+              <Text style={styles.statLabel}>{t('completed')}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userData.currentProjects}</Text>
-              <Text style={styles.statLabel}>Active</Text>
+              <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{userData.currentProjects}</Text>
+              <Text style={styles.statLabel}>{t('active')}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userData.rating}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{userData.rating}</Text>
+              <Text style={styles.statLabel}>{t('rating')}</Text>
             </View>
           </View>
         </View>
 
         {/* Personal Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          <View style={styles.infoCard}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>{t('personalInformation')}</Text>
+          <View style={[styles.infoCard, isDarkMode && styles.darkCard]}>
             <View style={styles.infoItem}>
-              <Ionicons name="mail-outline" size={20} color="#7f8c8d" />
+              <Ionicons name="mail-outline" size={20} color={isDarkMode ? "#888" : "#7f8c8d"} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{userData.email}</Text>
+                <Text style={styles.infoLabel}>{t('email')}</Text>
+                <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{userData.email}</Text>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <Ionicons name="call-outline" size={20} color="#7f8c8d" />
+              <Ionicons name="call-outline" size={20} color={isDarkMode ? "#888" : "#7f8c8d"} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>{userData.phone}</Text>
+                <Text style={styles.infoLabel}>{t('phone')}</Text>
+                <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{userData.phone}</Text>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <Ionicons name="id-card-outline" size={20} color="#7f8c8d" />
+              <Ionicons name="id-card-outline" size={20} color={isDarkMode ? "#888" : "#7f8c8d"} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Employee ID</Text>
-                <Text style={styles.infoValue}>{userData.employeeId}</Text>
+                <Text style={styles.infoLabel}>{t('employeeId')}</Text>
+                <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{userData.employeeId}</Text>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={20} color="#7f8c8d" />
+              <Ionicons name="calendar-outline" size={20} color={isDarkMode ? "#888" : "#7f8c8d"} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Join Date</Text>
-                <Text style={styles.infoValue}>{userData.joinDate}</Text>
+                <Text style={styles.infoLabel}>{t('joinDate')}</Text>
+                <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{userData.joinDate}</Text>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#7f8c8d" />
+              <Ionicons name="checkmark-circle-outline" size={20} color={isDarkMode ? "#888" : "#7f8c8d"} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Status</Text>
+                <Text style={styles.infoLabel}>{t('status')}</Text>
                 <Text style={[styles.infoValue, { color: '#2ecc71' }]}>
                   {userData.status}
                 </Text>
@@ -158,89 +171,43 @@ const UserProfile = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Settings */}
-        {/* <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.settingsCard}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Ionicons name="notifications-outline" size={22} color="#3498db" />
-                <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Notifications</Text>
-                  <Text style={styles.settingDescription}>Receive app notifications</Text>
-                </View>
-              </View>
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: '#bdc3c7', true: '#3498db' }}
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Ionicons name="moon-outline" size={22} color="#9b59b6" />
-                <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Dark Mode</Text>
-                  <Text style={styles.settingDescription}>Switch to dark theme</Text>
-                </View>
-              </View>
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: '#bdc3c7', true: '#9b59b6' }}
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Ionicons name="location-outline" size={22} color="#e74c3c" />
-                <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Location Services</Text>
-                  <Text style={styles.settingDescription}>Use your location for maps</Text>
-                </View>
-              </View>
-              <Switch
-                value={locationServices}
-                onValueChange={setLocationServices}
-                trackColor={{ false: '#bdc3c7', true: '#e74c3c' }}
-              />
-            </View>
-          </View>
-        </View> */}
-
         {/* Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions</Text>
-          <View style={styles.actionsCard}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>{t('actions')}</Text>
+          <View style={[styles.actionsCard, isDarkMode && styles.darkCard]}>
             <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
               <Ionicons name="key-outline" size={22} color="#e67e22" />
-              <Text style={styles.actionText}>Change Password</Text>
-              <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
+              <Text style={[styles.actionText, isDarkMode && styles.darkText]}>{t('changePassword')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#666" : "#bdc3c7"} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleHelpSupport}>
               <Ionicons name="help-circle-outline" size={22} color="#3498db" />
-              <Text style={styles.actionText}>Help & Support</Text>
-              <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
+              <Text style={[styles.actionText, isDarkMode && styles.darkText]}>{t('helpSupport')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#666" : "#bdc3c7"} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={handlePrivacyPolicy}>
               <Ionicons name="document-text-outline" size={22} color="#7f8c8d" />
-              <Text style={styles.actionText}>Privacy Policy</Text>
-              <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
+              <Text style={[styles.actionText, isDarkMode && styles.darkText]}>{t('privacyPolicy')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#666" : "#bdc3c7"} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity 
+          style={[styles.logoutButton, isDarkMode && styles.darkCard]} 
+          onPress={handleLogout}
+        >
           <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{t('logout')}</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>FTTH Manager v1.0</Text>
+          <Text style={[styles.footerText, isDarkMode && styles.darkFooterText]}>
+            FTTH Manager v1.0
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -252,6 +219,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  darkContainer: {
+    backgroundColor: '#121212',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,6 +232,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
   },
+  darkHeader: {
+    backgroundColor: '#1e1e1e',
+    borderBottomColor: '#333',
+  },
   backButton: {
     padding: 4,
   },
@@ -269,6 +243,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#2c3e50',
+  },
+  darkText: {
+    color: '#ffffff',
+  },
+  darkSubtext: {
+    color: '#cccccc',
   },
   scrollView: {
     flex: 1,
@@ -291,6 +271,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  darkCard: {
+    backgroundColor: '#1e1e1e',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
   },
   avatarContainer: {
     position: 'relative',
@@ -396,46 +381,6 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     fontWeight: '500',
   },
-  settingsCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
-  },
-  settingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  settingText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  settingLabel: {
-    fontSize: 14,
-    color: '#2c3e50',
-    fontWeight: '500',
-  },
-  settingDescription: {
-    fontSize: 12,
-    color: '#7f8c8d',
-    marginTop: 2,
-  },
   actionsCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -493,6 +438,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#bdc3c7',
     fontWeight: '300',
+  },
+  darkFooterText: {
+    color: '#666',
   },
 });
 

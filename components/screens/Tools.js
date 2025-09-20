@@ -9,13 +9,26 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../../components/context/AppContext'; 
+import { useTranslation } from '../hooks/useTranslation';    
 
-const Tools = ({ navigation }) => {
+const Tools = ({ navigation, device, theme }) => {
   const [breakageDetection, setBreakageDetection] = useState(true);
   const [autoDistanceMeasurement, setAutoDistanceMeasurement] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [gpsTracking, setGpsTracking] = useState(true);
   const [cloudSync, setCloudSync] = useState(true);
+
+  const { t } = useTranslation();
+const { isDarkMode } = useApp();
+
+const colors = {
+  background : isDarkMode ? '#121212' : '#f8f9fa',
+  card       : isDarkMode ? '#1e1e1e' : '#ffffff',
+  text       : isDarkMode ? '#ffffff' : '#2c3e50',
+  subText    : isDarkMode ? '#b0b0b0' : '#7f8c8d',
+  border     : isDarkMode ? '#333'    : '#ecf0f1',
+};
 
   const maintenanceHistory = [
     { id: 1, date: '2024-03-15', type: 'Preventive', status: 'Completed', technician: 'John Doe' },
@@ -35,8 +48,8 @@ const Tools = ({ navigation }) => {
 
   const handleBreakageDetection = () => {
     Alert.alert(
-      'Fiber Breakage Detection',
-      'This feature uses OTDR technology to detect fiber breaks and measure distance to fault points.'
+      t('fiberBreakageDetection'),
+    t('otdrDescription')
     );
   };
 
@@ -65,16 +78,17 @@ const Tools = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }, { paddingTop: device.topInset + 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings & Tools</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+    {t('tools')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -85,9 +99,10 @@ const Tools = ({ navigation }) => {
       >
         {/* Fiber Tools Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fiber Optic Tools</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+    {t('fiberOpticTools')}</Text>
           
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity 
               style={styles.settingItem}
               onPress={handleBreakageDetection}
@@ -97,8 +112,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="warning-outline" size={22} color="#e74c3c" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Fiber Breakage Detector</Text>
-                  <Text style={styles.settingDescription}>Detect fiber breaks with distance measurement</Text>
+                 <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('fiberBreakageDetector')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('detectFiberBreaks')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -110,8 +127,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="analytics-outline" size={22} color="#3498db" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Auto Distance Measurement</Text>
-                  <Text style={styles.settingDescription}>Automatic distance calculation to fault points</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('autoDistanceMeasurement')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('autoDistanceCalc')}</Text>
                 </View>
               </View>
               <Switch
@@ -125,7 +144,8 @@ const Tools = ({ navigation }) => {
 
         {/* Maintenance Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Maintenance Management</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+    {t('maintenanceManagement')}</Text>
           
           <View style={styles.settingCard}>
             <TouchableOpacity 
@@ -137,8 +157,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="time-outline" size={22} color="#2ecc71" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Maintenance History</Text>
-                  <Text style={styles.settingDescription}>View complete maintenance records</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('maintenanceHistory')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('viewMaintenanceRecords')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -153,8 +175,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="construct-outline" size={22} color="#e67e22" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Maintenance Jobs</Text>
-                  <Text style={styles.settingDescription}>All maintenance work ordered by date</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('maintenanceJobs')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('maintenanceByDate')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -164,7 +188,8 @@ const Tools = ({ navigation }) => {
 
         {/* Multimedia Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Multimedia Management</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+    {t('multimediaManagement')}</Text>
           
           <View style={styles.settingCard}>
             <TouchableOpacity 
@@ -176,8 +201,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="images-outline" size={22} color="#9b59b6" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Multimedia Gallery</Text>
-                  <Text style={styles.settingDescription}>All media files ordered by date</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('multimediaGallery')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('mediaByDate')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -192,8 +219,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="document-attach-outline" size={22} color="#1abc9c" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Report Multimedia</Text>
-                  <Text style={styles.settingDescription}>Media files assigned to specific reports</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('reportMultimedia')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('mediaForReports')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -203,7 +232,8 @@ const Tools = ({ navigation }) => {
 
         {/* Reports Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reports</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+    {t('reports')}</Text>
           
           <View style={styles.settingCard}>
             <TouchableOpacity 
@@ -215,8 +245,10 @@ const Tools = ({ navigation }) => {
                   <Ionicons name="document-text-outline" size={22} color="#34495e" />
                 </View>
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>Report Details</Text>
-                  <Text style={styles.settingDescription}>Detailed view of maintenance reports</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+    {t('reportDetails')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.subText }]}>
+    {t('detailedMaintenanceReports')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#bdc3c7" />
@@ -284,18 +316,18 @@ const Tools = ({ navigation }) => {
 
         {/* App Info */}
         <View style={styles.section}>
-          <View style={styles.infoCard}>
+          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.infoItem}>
               <Ionicons name="hardware-chip-outline" size={20} color="#7f8c8d" />
-              <Text style={styles.infoText}>FTTH Manager v1.2.0</Text>
+              <Text style={[styles.infoText, { color: colors.subText }]}>FTTH Manager v1.2.0</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="build-outline" size={20} color="#7f8c8d" />
-              <Text style={styles.infoText}>Fiber Tools Package v2.1</Text>
+              <Text style={[styles.infoText, { color: colors.subText }]}>{t('fiberToolsPackage')} v2.1</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#7f8c8d" />
-              <Text style={styles.infoText}>Security Level: Enterprise</Text>
+              <Text style={[styles.infoText, { color: colors.subText }]}>{t('securityLevel')}</Text>
             </View>
           </View>
         </View>

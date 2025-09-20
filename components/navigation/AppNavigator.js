@@ -12,10 +12,19 @@ import ViewOnMap from '../screens/ViewOnMap';
 import CreateMaintenance from '../screens/CreateMaintenance';
 import ConnectivityDevices from '../screens/ConnectivityDevices';
 import NetworkMap from '../screens/NetworkMap';
+import { useApp } from '../context/AppContext';
+import LoadingScreen from '../screens/LoadingScreen';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
+
+  const { isAuthenticated, isLoading } = useApp();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator 
@@ -25,11 +34,11 @@ const AppNavigator = () => {
           cardStyle: { backgroundColor: '#ffffff' }
         }}
       >
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen}
-        />
-        <Stack.Screen 
+        {!isAuthenticated ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (
+          <>
+            <Stack.Screen 
           name="Dashboard" 
           component={DashboardScreen}
         />
@@ -71,6 +80,14 @@ const AppNavigator = () => {
          component={NetworkMap} 
          options={{ title: 'Network Map' }}
         />
+            {/* otras pantallas protegidas */}
+          </>
+        )}
+        {/* <Stack.Screen 
+          name="Login" 
+          component={LoginScreen}
+        /> */}
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,5 +1,5 @@
 // screens/NetworkMap.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,55 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator, Pressable
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NodeService, DeviceConfigService, FiberConfigService, NetworkMapService } from '../../service/storage';
+import { useApp } from '../../components/context/AppContext';;
+import { useTranslation } from '../hooks/useTranslation';
 
 const { width, height } = Dimensions.get('window');
 
-const NetworkMap = ({ route, navigation }) => {
+const lightTheme = {
+  primary: '#2E86C1',
+  secondary: '#AED6F1',
+  accent: '#E74C3C',
+  background: '#F8F9F9',
+  text: '#2C3E50',
+  lightText: '#7F8C8D',
+  success: '#27AE60',
+  warning: '#F39C12',
+  danger: '#C0392B',
+  white: '#FFFFFF',
+  border: '#D5D8DC',
+  card: '#FFFFFF',
+  surface: '#FFFFFF'
+};
+
+const darkTheme = {
+  primary: '#3498DB',
+  secondary: '#2C3E50',
+  accent: '#E74C3C',
+  background: '#121212',
+  text: '#ECF0F1',
+  lightText: '#BDC3C7',
+  success: '#27AE60',
+  warning: '#F39C12',
+  danger: '#C0392B',
+  white: '#1E1E1E',
+  border: '#34495E',
+  card: '#1E1E1E',
+  surface: '#2C2C2C'
+};
+
+const NetworkMap = ({ route, navigation, device }) => {
   const { projectId } = route.params;
+  const { isDarkMode } = useApp();
+  const { t } = useTranslation();
+  
   const [nodes, setNodes] = useState([]);
   const [selectedNodeType, setSelectedNodeType] = useState(null);
   const [devices, setDevices] = useState([]);
@@ -32,6 +69,14 @@ const NetworkMap = ({ route, navigation }) => {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [currentConfig, setCurrentConfig] = useState(null);
   const [configType, setConfigType] = useState(''); 
+
+  const [linkingMode, setLinkingMode] = useState(false);
+  const [linkSource, setLinkSource] = useState(null);
+   const [linkMenuVisible, setLinkMenuVisible] = useState(false);
+  const [selectedNodeForMenu, setSelectedNodeForMenu] = useState(null); // ← nuevo
+  const [connections, setConnections] = useState([]);
+
+  const [notifications, setNotifications] = useState([]);
 
   const [region, setRegion] = useState({
     latitude: 37.78825,
@@ -49,6 +94,9 @@ const NetworkMap = ({ route, navigation }) => {
   });
   const [loadingAddress, setLoadingAddress] = useState(false);
 
+  // Tema de colores basado en las preferencias del usuario
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
   // Cargar nodos existentes y configuración
   useEffect(() => {
     loadData();
@@ -56,11 +104,41 @@ const NetworkMap = ({ route, navigation }) => {
     getCurrentLocation();
   }, []);
 
+let notificationCounter = 0;
+  // Función para mostrar notificaciones
+const showNotification = (message, type = 'info', duration = 3000) => {
+  // const id = Date.now().toString();
+  const id = `notification-${notificationCounter++}`;
+  const newNotification = {
+    id,
+    message,
+    type,
+    duration
+  };
+  
+  setNotifications(prev => [...prev, newNotification]);
+  
+  // Cerrar automáticamente después de la duración especificada
+  if (duration > 0) {
+    setTimeout(() => {
+      removeNotification(id);
+    }, duration);
+  }
+  
+  return id;
+};
+
+// Función para eliminar notificaciones
+const removeNotification = (id) => {
+  setNotifications(prev => prev.filter(notification => notification.id !== id));
+};
+
   const getCurrentLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Could not access location');
+        // Alert.alert(t('permissionDenied'), t('locationAccessDenied'));
+        showNotification(t('locationAccessDenied'), 'error');
         return;
       }
 
@@ -72,315 +150,147 @@ const NetworkMap = ({ route, navigation }) => {
         longitudeDelta: 0.005,
       });
     } catch (error) {
-      console.log('Error getting location:', error);
+      // // // console.log(t('errorGettingLocation'), error);
     }
   };
 
-// const openConfigModal = async (item, type) => {
-//   console.log('Opening config modal:', type, item);
-  
-//   if (!item) {
-//     Alert.alert('Error', 'Configuration item not found');
-//     return;
-//   }
-  
-//   // Cerrar primero el modal del nodo
-//   setShowNodeModal(false);
-  
-//   // Pequeña pausa para permitir que el modal se cierre completamente
-//   await new Promise(resolve => setTimeout(resolve, 100));
-  
-//   // Crear un objeto limpio con solo las propiedades necesarias
-//   let configItem;
-//   if (type === 'device') {
-//     configItem = {
-//       type: item.type,
-//       ports: item.ports,
-//       quantity: item.quantity,
-//       portsUsed: item.portsUsed || Array(item.ports).fill().map((_, i) => ({
-//         port: i + 1,
-//         description: '',
-//         connectedTo: ''
-//       }))
-//     };
-//   } else {
-//     configItem = {
-//       type: item.type,
-//       quantity: item.quantity,
-//       colors: item.colors || Array(item.quantity).fill().map((_, i) => ({
-//         color: `Color ${i + 1}`,
-//         description: '',
-//         connectedTo: ''
-//       }))
-//     };
-//   }
-  
-//   console.log('Clean config item:', configItem);
-//   setCurrentConfig(configItem);
-//   setConfigType(type);
-//   setShowConfigModal(true);
-//   console.log('Config modal should be visible now');
-// };
-// const openConfigModal = async (item, type) => {
-//   console.log('Opening config modal:', type, item);
-  
-//   if (!item) {
-//     Alert.alert('Error', 'Configuration item not found');
-//     return;
-//   }
-  
-//   // Cerrar primero el modal del nodo
-//   setShowNodeModal(false);
-  
-//   // Pequeña pausa para permitir que el modal se cierre completamente
-//   await new Promise(resolve => setTimeout(resolve, 100));
-  
-//   // Crear un objeto limpio con solo las propiedades necesarias
-//   let configItem;
-//   if (type === 'device') {
-//     configItem = {
-//       type: item.type,
-//       ports: item.ports,
-//       quantity: item.quantity,
-//       portsUsed: item.portsUsed || Array(item.ports).fill().map((_, i) => ({
-//         port: i + 1,
-//         description: '',
-//         connectedTo: ''
-//       }))
-//     };
-//   } else {
-//     // Para fibra, usar colores estándar
-//     const standardColors = getStandardFiberColors(item.type);
-//     configItem = {
-//       type: item.type,
-//       quantity: item.quantity,
-//       colors: item.colors || standardColors.map((color, index) => ({
-//         color: color,
-//         description: '',
-//         connectedTo: ''
-//       }))
-//     };
-//   }
-  
-//   console.log('Clean config item:', configItem);
-//   setCurrentConfig(configItem);
-//   setConfigType(type);
-//   setShowConfigModal(true);
-//   console.log('Config modal should be visible now');
-// };
-const openConfigModal = async (item, type) => {
-  console.log('Opening config modal:', type, item);
-  console.log('Item colors:', item.colors);
-  
-  if (!item) {
-    Alert.alert('Error', 'Configuration item not found');
-    return;
-  }
-  
-  // Cerrar primero el modal del nodo
-  setShowNodeModal(false);
-  
-  // Pequeña pausa para permitir que el modal se cierre completamente
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Crear un objeto limpio con solo las propiedades necesarias
-  let configItem;
-  if (type === 'device') {
-    configItem = {
-      type: item.type,
-      ports: item.ports,
-      quantity: item.quantity,
-      portsUsed: item.portsUsed || Array(item.ports).fill().map((_, i) => ({
-        port: i + 1,
-        description: '',
-        connectedTo: ''
-      }))
-    };
-  } else {
-    // Para fibra, usar colores estándar pero preservar los existentes
-    const standardColors = getStandardFiberColors(item.type);
+  const openConfigModal = async (item, type) => {
+    // // // console.log(t('openingConfigModal'), type, item);
     
-    // Siempre usar todos los colores estándar, preservando los datos existentes
-  const existingColors = item.colors || [];
-  const colors = standardColors.map((standardColor, index) => {
-    const existingColor = existingColors.find(ec => ec.color === standardColor);
-    return existingColor || {
-      color: standardColor,
-      description: '',
-      connectedTo: ''
-    };
-  });
-  
-  configItem = {
-    type: item.type,
-    quantity: item.quantity,
-    colors: colors // Todos los colores, no solo los de la cantidad
-  };
-}
-  
-  console.log('Clean config item:', configItem);
-  setCurrentConfig(configItem);
-  setConfigType(type);
-  setShowConfigModal(true);
-  console.log('Config modal should be visible now');
-};
-
-// Función para obtener colores estándar según tipo de fibra
-// const getStandardFiberColors = (fiberType) => {
-//   // Extraer el número de fibras del tipo (ej: "12F" -> 12)
-//   const fiberCount = parseInt(fiberType.replace(/\D/g, ''));
-  
-//   if (isNaN(fiberCount)) return [];
-  
-//   // Colores estándar para 12 fibras (en orden)
-//   const standard12Colors = [
-//     "Blue", "Orange", "Green", "Brown", "Slate", "White",
-//     "Red", "Black", "Yellow", "Violet", "Rose", "Aqua"
-//   ];
-  
-//   // Para tipos con múltiplos de 12
-//   if (fiberCount % 12 === 0) {
-//     const tubeCount = fiberCount / 12;
-//     const colors = [];
+    if (!item) {
+      // Alert.alert(t('error'), t('configItemNotFound'));
+      showNotification(t('configItemNotFound'), 'error');
+      return;
+    }
     
-//     for (let tube = 1; tube <= tubeCount; tube++) {
-//       standard12Colors.forEach(color => {
-//         colors.push(`${tube}-${color}`);
-//       });
-//     }
+    // Cerrar primero el modal del nodo
+    setShowNodeModal(false);
     
-//     return colors;
-//   }
-  
-//   // Para tipos que no son múltiplos de 12
-//   const colors = [];
-//   for (let i = 1; i <= fiberCount; i++) {
-//     colors.push(`Fiber ${i}`);
-//   }
-  
-//   return colors;
-// };
-// Función para obtener colores estándar según tipo de fibra
-// const getStandardFiberColors = (fiberType) => {
-//   if (!fiberType) return [];
-  
-//   // Extraer el número de fibras del tipo (ej: "12F" -> 12)
-//   const fiberCount = parseInt(fiberType.replace(/\D/g, ''));
-  
-//   if (isNaN(fiberCount)) {
-//     // Si no es un formato numérico, devolver colores genéricos
-//     return Array(12).fill().map((_, i) => `Fiber ${i + 1}`);
-//   }
-  
-//   // Colores estándar para 12 fibras (en orden)
-//   const standard12Colors = [
-//     "Blue", "Orange", "Green", "Brown", "Slate", "White",
-//     "Red", "Black", "Yellow", "Violet", "Rose", "Aqua"
-//   ];
-  
-//   // Para tipos con múltiplos de 12
-//   if (fiberCount % 12 === 0) {
-//     const tubeCount = fiberCount / 12;
-//     const colors = [];
+    // Pequeña pausa para permitir que el modal se cierre completamente
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-//     for (let tube = 1; tube <= tubeCount; tube++) {
-//       standard12Colors.forEach(color => {
-//         colors.push(`${tube}-${color}`);
-//       });
-//     }
-    
-//     return colors;
-//   }
-  
-//   // Para tipos que no son múltiplos de 12
-//   const colors = [];
-//   for (let i = 1; i <= fiberCount; i++) {
-//     colors.push(`Fiber ${i}`);
-//   }
-  
-//   return colors;
-// };
-// Función para obtener colores estándar según tipo de fibra
-const getStandardFiberColors = (fiberType) => {
-  if (!fiberType) return [];
-  
-  console.log('Getting standard colors for fiber type:', fiberType);
-  
-  // Extraer el número de fibras del tipo (ej: "12F" -> 12)
-  const fiberCount = parseInt(fiberType.replace(/\D/g, ''));
-  
-  if (isNaN(fiberCount)) {
-    // Si no es un formato numérico, devolver colores genéricos
-    console.log('Non-numeric fiber type, returning generic colors');
-    return Array(12).fill().map((_, i) => `Fiber ${i + 1}`);
-  }
-  
-  // Colores estándar para 12 fibras (en orden)
-  const standard12Colors = [
-    "Blue", "Orange", "Green", "Brown", "Slate", "White",
-    "Red", "Black", "Yellow", "Violet", "Rose", "Aqua"
-  ];
-  
-  console.log('Fiber count:', fiberCount);
-  
-  // Para tipos con múltiplos de 12
-  if (fiberCount % 12 === 0) {
-    const tubeCount = fiberCount / 12;
-    const colors = [];
-    
-    for (let tube = 1; tube <= tubeCount; tube++) {
-      standard12Colors.forEach(color => {
-        colors.push(`${tube}-${color}`);
+    // Crear un objeto limpio con solo las propiedades necesarias
+    let configItem;
+    if (type === 'device') {
+      configItem = {
+        type: item.type,
+        ports: item.ports,
+        quantity: item.quantity,
+        portsUsed: item.portsUsed || Array(item.ports).fill().map((_, i) => ({
+          port: i + 1,
+          description: '',
+          connectedTo: ''
+        }))
+      };
+    } else {
+      // Para fibra, usar colores estándar pero preservar los existentes
+      const standardColors = getStandardFiberColors(item.type);
+      
+      // Siempre usar todos los colores estándar, preservando los datos existentes
+      const existingColors = item.colors || [];
+      const colors = standardColors.map((standardColor, index) => {
+        const existingColor = existingColors.find(ec => ec.color === standardColor);
+        return existingColor || {
+          color: standardColor,
+          description: '',
+          connectedTo: ''
+        };
       });
+      
+      configItem = {
+        type: item.type,
+        quantity: item.quantity,
+        colors: colors // Todos los colores, no solo los de la cantidad
+      };
     }
     
-    console.log('Multiples of 12, colors:', colors);
+    // // // console.log(t('cleanConfigItem'), configItem);
+    setCurrentConfig(configItem);
+    setConfigType(type);
+    setShowConfigModal(true);
+    // // // console.log(t('configModalVisible'));
+  };
+
+  // Función para obtener colores estándar según tipo de fibra
+  const getStandardFiberColors = (fiberType) => {
+    if (!fiberType) return [];
+    
+    // // // console.log(t('gettingStandardColors'), fiberType);
+    
+    // Extraer el número de fibras del tipo (ej: "12F" -> 12)
+    const fiberCount = parseInt(fiberType.replace(/\D/g, ''));
+    
+    if (isNaN(fiberCount)) {
+      // Si no es un formato numérico, devolver colores genéricos
+      // // // console.log(t('nonNumericFiberType'));
+      return Array(12).fill().map((_, i) => `${t('fiber')} ${i + 1}`);
+    }
+    
+    // Colores estándar para 12 fibras (en orden)
+    const standard12Colors = [
+      t('blue'), t('orange'), t('green'), t('brown'), t('slate'), t('white'),
+      t('red'), t('black'), t('yellow'), t('violet'), t('rose'), t('aqua')
+    ];
+    
+    // // // console.log(t('fiberCount'), fiberCount);
+    
+    // Para tipos con múltiplos de 12
+    if (fiberCount % 12 === 0) {
+      const tubeCount = fiberCount / 12;
+      const colors = [];
+      
+      for (let tube = 1; tube <= tubeCount; tube++) {
+        standard12Colors.forEach(color => {
+          colors.push(`${tube}-${color}`);
+        });
+      }
+      
+      // // // console.log(t('multiplesOf12'), colors);
+      return colors;
+    }
+    
+    // Para tipos que no son múltiplos de 12
+    const colors = [];
+    for (let i = 1; i <= fiberCount; i++) {
+      colors.push(`${t('fiber')} ${i}`);
+    }
+    
+    // // // console.log(t('nonMultiplesOf12'), colors);
     return colors;
-  }
-  
-  // Para tipos que no son múltiplos de 12
-  const colors = [];
-  for (let i = 1; i <= fiberCount; i++) {
-    colors.push(`Fiber ${i}`);
-  }
-  
-  console.log('Non-multiples of 12, colors:', colors);
-  return colors;
-};
+  };
 
-
-const saveConfig = (updatedConfig) => {
-  if (configType === 'device') {
-    setNodeForm(prev => ({
-      ...prev,
-      selectedDevices: prev.selectedDevices.map(d => 
-        d.type === updatedConfig.type && d.ports === updatedConfig.ports
-          ? updatedConfig 
-          : d
-      )
-    }));
-  } else {
-    setNodeForm(prev => ({
-      ...prev,
-      selectedFibers: prev.selectedFibers.map(f => 
-        f.type === updatedConfig.type
-          ? updatedConfig 
-          : f
-      )
-    }));
-  }
-  
-  setShowConfigModal(false);
-  
-  // Reabrir el modal del nodo después de guardar la configuración
-  setTimeout(() => {
-    setShowNodeModal(true);
-  }, 100);
-};
+  const saveConfig = (updatedConfig) => {
+    if (configType === 'device') {
+      setNodeForm(prev => ({
+        ...prev,
+        selectedDevices: prev.selectedDevices.map(d => 
+          d.type === updatedConfig.type && d.ports === updatedConfig.ports
+            ? updatedConfig 
+            : d
+        )
+      }));
+    } else {
+      setNodeForm(prev => ({
+        ...prev,
+        selectedFibers: prev.selectedFibers.map(f => 
+          f.type === updatedConfig.type
+            ? updatedConfig 
+            : f
+        )
+      }));
+    }
+    
+    setShowConfigModal(false);
+    
+    // Reabrir el modal del nodo después de guardar la configuración
+    setTimeout(() => {
+      setShowNodeModal(true);
+    }, 100);
+  };
 
   const loadData = async () => {
     try {
-      console.log('=== LOADING DATA ===');
+      // // console.log(t('loadingData'));
       
       // Cargar nodos existentes
       const existingNodes = await NodeService.getNodesByProject(projectId);
@@ -389,7 +299,7 @@ const saveConfig = (updatedConfig) => {
         id: node.id || `temp-${index}-${node.latitude}-${node.longitude}`
       }));
       setNodes(nodesWithIds);
-      console.log('Nodes loaded:', nodesWithIds.length);
+      // // console.log(t('nodesLoaded'), nodesWithIds.length);
 
       // Cargar dispositivos y fibras configurados
       const deviceConfig = await DeviceConfigService.getDeviceConfig(projectId);
@@ -403,8 +313,9 @@ const saveConfig = (updatedConfig) => {
       setFibers(normalizedFibers);
 
     } catch (error) {
-      console.log('Error loading data:', error);
-      Alert.alert('Error', 'Failed to load network data');
+      // // console.log(t('errorLoadingData'), error);
+      // Alert.alert(t('error'), t('failedLoadNetworkData'));
+      showNotification(t('failedLoadNetworkData'), 'error');
     }
   };
 
@@ -428,10 +339,11 @@ const saveConfig = (updatedConfig) => {
         
         return addressString;
       }
-      return 'Address not available';
+      return t('addressNotAvailable');
     } catch (error) {
-      console.log('Error getting address:', error);
-      return 'Error getting address';
+      // // console.log(t('errorGettingAddress'), error);
+      showNotification(t('errorGettingAddress'), 'error');
+      return t('errorGettingAddress');
     } finally {
       setLoadingAddress(false);
     }
@@ -469,107 +381,206 @@ const saveConfig = (updatedConfig) => {
     return assignedDevice ? (assignedDevice.quantity || 1) : 0;
   };
 
-  // Guardar el mapa de red
-//   const saveNetworkMap = async () => {
-//     try {
-//       const networkMapData = {
-//         projectId,
-//         nodes,
-//         createdAt: new Date().toISOString()
-//       };
+  // const saveNetworkMap = async () => {
+  //   try {
+  //     const networkMapData = {
+  //       projectId,
+  //       nodes: nodes,
+  //       connections: getConnections(),
+  //       createdAt: new Date().toISOString()
+  //     };
       
-//       await AsyncStorage.setItem(`networkMap_${projectId}`, JSON.stringify(networkMapData));
+  //     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
       
-//       Alert.alert('Success', 'Network map saved successfully!', [
-//         {
-//           text: 'View on map',
-//           onPress: () => navigation.navigate('NetworkMap', { projectId })
-//         },
-//         {
-//           text: 'Exit',
-//           onPress: () => navigation.navigate('Dashboard')
-//         }
-//       ]);
-//     } catch (error) {
-//       console.log('Error saving network map:', error);
-//       Alert.alert('Error', 'Could not save network map');
-//     }
-//   };
-// Guardar el mapa de red completo con configuraciones
-// const saveNetworkMap = async () => {
-//   try {
-//     const networkMapData = {
-//       projectId,
-//       nodes: nodes.map(node => ({
-//         ...node,
-//         // Asegurar que tengamos todos los datos de configuración
-//         devices: node.devices || [],
-//         fibers: node.fibers || [],
-//         // Incluir información de conexiones si es necesario
-//         connections: getConnections().filter(conn => 
-//           conn.from.id === node.id || conn.to.id === node.id
-//         )
-//       })),
-//       connections: getConnections(),
-//       createdAt: new Date().toISOString(),
-//       updatedAt: new Date().toISOString()
-//     };
-    
-//     await AsyncStorage.setItem(`networkMap_${projectId}`, JSON.stringify(networkMapData));
-    
-//     Alert.alert('Success', 'Network map saved successfully!', [
-//       {
-//         text: 'OK',
-//         onPress: () => navigation.navigate('Dashboard')
-//       }
-//     ]);
-//   } catch (error) {
-//     console.log('Error saving network map:', error);
-//     Alert.alert('Error', 'Could not save network map');
-//   }
-// };
+  //     if (result.success) {
+  //       Alert.alert(t('success'), t('networkMapSaved'), [
+  //         {
+  //           text: 'OK',
+  //           onPress: () => navigation.navigate('Dashboard')
+  //         }
+  //       ]);
+  //     } else {
+  //       Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+  //     }
+  //   } catch (error) {
+  //     // // console.log(t('errorSavingNetworkMap'), error);
+  //     Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+  //   }
+  // };
+
+  // Cargar mapa de red guardado
+  
+  // Buscar la función saveNetworkMap y reemplazarla con esta versión actualizada
 const saveNetworkMap = async () => {
   try {
+    // Obtener todas las conexiones (automáticas + manuales)
+    const autoConnections = getConnections();
+    const allConnections = [...autoConnections, ...connections];
+    
     const networkMapData = {
       projectId,
       nodes: nodes,
-      connections: getConnections(),
+      connections: allConnections, // Guardar todas las conexiones
       createdAt: new Date().toISOString()
     };
     
     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
     
     if (result.success) {
-    //   Alert.alert('Success', 'Network map saved successfully!');
-      Alert.alert('Success', 'Network map saved successfully!', [
+      Alert.alert(t('success'), t('networkMapSaved'), [
         {
           text: 'OK',
           onPress: () => navigation.navigate('Dashboard')
         }
       ]);
     } else {
-      Alert.alert('Error', 'Could not save network map');
+      // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
+      showNotification(t('couldNotSaveNetworkMap'), 'error');
     }
   } catch (error) {
-    console.log('Error saving network map:', error);
-    Alert.alert('Error', 'Could not save network map');
+    // // console.log(t('errorSavingNetworkMap'), error);
+    showNotification(t('couldNotSaveNetworkMap'), 'error');
+    // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
   }
 };
+  
+  // const loadSavedNetworkMap = async () => {
+  //   try {
+  //     const savedMap = await AsyncStorage.getItem(`networkMap_${projectId}`);
+  //     if (savedMap) {
+  //       const mapData = JSON.parse(savedMap);
+        
+  //       // Actualizar el estado con los nodos guardados
+  //       setNodes(mapData.nodes || []);
+        
+  //       // Si hay información de región guardada, puedes usarla
+  //       if (mapData.nodes && mapData.nodes.length > 0) {
+  //         const firstNode = mapData.nodes[0];
+  //         setRegion({
+  //           latitude: firstNode.latitude,
+  //           longitude: firstNode.longitude,
+  //           latitudeDelta: 0.0922,
+  //           longitudeDelta: 0.0421,
+  //         });
+  //       }
+        
+  //       // // console.log(t('networkMapLoaded'), mapData.nodes.length, t('nodes'));
+  //     }
+  //   } catch (error) {
+  //     // // console.log(t('errorLoadingNetworkMap'), error);
+  //   }
+  // };
 
+  // const handleMapPress = async (e) => {
 
-// Cargar mapa de red guardado
+  //   if (linkingMode && linkSource) {
+  //   // En modo enlace, buscar el nodo más cercano a la coordenada tocada
+  //   const { coordinate } = e.nativeEvent;
+  //   const closestNode = findClosestNode(coordinate, linkSource); // ← Excluir linkSource
+    
+  //   if (closestNode) {
+  //     createLink(linkSource, closestNode);
+  //   } else {
+  //     // Si no se encuentra un nodo cercano, mostrar mensaje
+  //     Alert.alert('Info', 'No se encontró ningún nodo cercano para enlazar');
+  //   }
+  //   return;
+  // }
+
+  //   if (!isAddingMode || !selectedNodeType) return;
+    
+  //   const { coordinate } = e.nativeEvent;
+    
+  //   // Obtener dirección desde coordenadas
+  //   const address = await getAddressFromCoordinates(coordinate.latitude, coordinate.longitude);
+    
+  //   setSelectedNode({
+  //     type: selectedNodeType,
+  //     latitude: coordinate.latitude,
+  //     longitude: coordinate.longitude,
+  //     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`
+  //   });
+    
+  //   setNodeForm({
+  //     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`,
+  //     owner: '',
+  //     address: address,
+  //     selectedFibers: [], // Cambiado de selectedFiber a selectedFibers
+  //     selectedDevices: []
+  //   });
+    
+  //   setShowNodeModal(true);
+  // };
+
+  // Función auxiliar para encontrar el nodo más cercano
+// const findClosestNode = (coordinate) => {
+//   let closestNode = null;
+//   let minDistance = Infinity;
+  
+//   nodes.forEach(node => {
+//     const distance = Math.sqrt(
+//       Math.pow(node.latitude - coordinate.latitude, 2) +
+//       Math.pow(node.longitude - coordinate.longitude, 2)
+//     );
+    
+//     if (distance < minDistance && distance < 0.001) { // Umbral de 0.001 grados
+//       minDistance = distance;
+//       closestNode = node;
+//     }
+//   });
+  
+//   return closestNode;
+// };
+
+// const handleMapPress = async (e) => {
+//   // Si estamos en modo de enlace, solo permitir agregar nuevos nodos
+//   if (linkingMode && linkSource) {
+//     if (!isAddingMode || !selectedNodeType) {
+//       // Mostrar mensaje indicando que primero debe seleccionar un tipo de nodo
+//       Alert.alert('Modo enlace activo', 'Selecciona un tipo de nodo primero para agregar y enlazar automáticamente');
+//     }
+//     return;
+//   }
+
+//   if (!isAddingMode || !selectedNodeType) return;
+  
+//   const { coordinate } = e.nativeEvent;
+  
+//   // Obtener dirección desde coordenadas
+//   const address = await getAddressFromCoordinates(coordinate.latitude, coordinate.longitude);
+  
+//   setSelectedNode({
+//     type: selectedNodeType,
+//     latitude: coordinate.latitude,
+//     longitude: coordinate.longitude,
+//     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`
+//   });
+  
+//   setNodeForm({
+//     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`,
+//     owner: '',
+//     address: address,
+//     selectedFibers: [],
+//     selectedDevices: []
+//   });
+  
+//   setShowNodeModal(true);
+// };
+
+// Buscar la función loadSavedNetworkMap y reemplazarla con esta versión actualizada
 const loadSavedNetworkMap = async () => {
   try {
-    const savedMap = await AsyncStorage.getItem(`networkMap_${projectId}`);
+    const savedMap = await NetworkMapService.getNetworkMap(projectId);
     if (savedMap) {
-      const mapData = JSON.parse(savedMap);
-      
       // Actualizar el estado con los nodos guardados
-      setNodes(mapData.nodes || []);
+      setNodes(savedMap.nodes || []);
+      
+      // Cargar las conexiones guardadas
+      setConnections(savedMap.connections || []);
       
       // Si hay información de región guardada, puedes usarla
-      if (mapData.nodes && mapData.nodes.length > 0) {
-        const firstNode = mapData.nodes[0];
+      if (savedMap.nodes && savedMap.nodes.length > 0) {
+        const firstNode = savedMap.nodes[0];
         setRegion({
           latitude: firstNode.latitude,
           longitude: firstNode.longitude,
@@ -578,15 +589,27 @@ const loadSavedNetworkMap = async () => {
         });
       }
       
-      console.log('Network map loaded:', mapData.nodes.length, 'nodes');
+      // // console.log(t('networkMapLoaded'), savedMap.nodes.length, t('nodes'));
+      // // console.log(t('connectionsLoaded'), savedMap.connections?.length || 0, t('connections'));
     }
   } catch (error) {
-    console.log('Error loading saved network map:', error);
+    // // console.log(t('errorLoadingNetworkMap'), error);
   }
 };
 
-
 const handleMapPress = async (e) => {
+  // Si estamos en modo de enlace, solo permitir agregar nuevos nodos
+  if (linkingMode && linkSource) {
+    // Permitir agregar nodos incluso en modo enlace
+    if (!isAddingMode || !selectedNodeType) {
+      // Mostrar mensaje indicando que primero debe seleccionar un tipo de nodo
+      // Alert.alert('Modo enlace activo', 'Selecciona un tipo de nodo primero para agregar y enlazar automáticamente');
+      showNotification('Selecciona un tipo de nodo primero para agregar y enlazar automáticamente', 'info');
+      return; // Solo retornar si no hay tipo de nodo seleccionado
+    }
+    // Si hay tipo de nodo seleccionado, continuar con la creación normal
+  }
+
   if (!isAddingMode || !selectedNodeType) return;
   
   const { coordinate } = e.nativeEvent;
@@ -605,12 +628,152 @@ const handleMapPress = async (e) => {
     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`,
     owner: '',
     address: address,
-    selectedFibers: [], // Cambiado de selectedFiber a selectedFibers
+    selectedFibers: [],
     selectedDevices: []
   });
   
   setShowNodeModal(true);
 };
+
+// Función auxiliar para encontrar el nodo más cercano (excluyendo el nodo fuente)
+const findClosestNode = (coordinate, excludeNode = null) => {
+  let closestNode = null;
+  let minDistance = Infinity;
+  
+  nodes.forEach(node => {
+    // Excluir el nodo especificado
+    if (excludeNode && node.id === excludeNode.id) {
+      return;
+    }
+    
+    const distance = Math.sqrt(
+      Math.pow(node.latitude - coordinate.latitude, 2) +
+      Math.pow(node.longitude - coordinate.longitude, 2)
+    );
+    
+    if (distance < minDistance && distance < 0.001) { // Umbral de 0.001 grados
+      minDistance = distance;
+      closestNode = node;
+    }
+  });
+  
+  return closestNode;
+};
+
+// Agregar este componente antes del return principal
+const NotificationContainer = () => {
+  return (
+    <View style={styles.notificationContainer}>
+      {notifications.map((notification) => (
+        <Notification
+          key={notification.id}
+          message={notification.message}
+          type={notification.type}
+          onClose={() => removeNotification(notification.id)}
+        />
+      ))}
+    </View>
+  );
+};
+
+const Notification = ({ message, type, onClose }) => {
+  const getNotificationStyle = () => {
+    switch (type) {
+      case 'success':
+        return { backgroundColor: theme.success };
+      case 'error':
+        return { backgroundColor: theme.danger };
+      case 'warning':
+        return { backgroundColor: theme.warning };
+      default:
+        return { backgroundColor: theme.primary };
+    }
+  };
+
+  return (
+    <View style={[styles.notification, getNotificationStyle()]}>
+      <Text style={styles.notificationText}>{message}</Text>
+      <TouchableOpacity onPress={onClose} style={styles.notificationClose}>
+        <Ionicons name="close" size={20} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+  // const addNode = async () => {
+  //   try {
+  //     const newNode = {
+  //       project_id: projectId,
+  //       name: nodeForm.name,
+  //       type: selectedNode.type,
+  //       description: `${selectedNode.type} ${t('node')}`,
+  //       latitude: selectedNode.latitude,
+  //       longitude: selectedNode.longitude,
+  //       owner: nodeForm.owner,
+  //       address: nodeForm.address,
+  //       fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
+  //       devices: nodeForm.selectedDevices,
+  //       status: 'active',
+  //       createdAt: new Date().toISOString()
+  //     };
+
+  //     const savedNode = await NodeService.createNode(newNode);
+  //     setNodes(prev => [...prev, { ...newNode, id: savedNode.insertId }]);
+      
+  //     setShowNodeModal(false);
+  //     setIsAddingMode(false);
+  //     setSelectedNodeType(null);
+  //     setSelectedNode(null);
+      
+  //     Alert.alert(t('success'), `${selectedNode.type} ${t('nodeAdded')}`);
+
+  //   } catch (error) {
+  //     // // console.log(t('errorAddingNode'), error);
+  //     Alert.alert(t('error'), t('failedAddNode'));
+  //   }
+  // };
+
+  // Seleccionar tipo de nodo
+  
+//   const addNode = async () => {
+//   try {
+//     const newNode = {
+//       project_id: projectId,
+//       name: nodeForm.name,
+//       type: selectedNode.type,
+//       description: `${selectedNode.type} ${t('node')}`,
+//       latitude: selectedNode.latitude,
+//       longitude: selectedNode.longitude,
+//       owner: nodeForm.owner,
+//       address: nodeForm.address,
+//       fibers: nodeForm.selectedFibers,
+//       devices: nodeForm.selectedDevices,
+//       status: 'active',
+//       createdAt: new Date().toISOString()
+//     };
+
+//     const savedNode = await NodeService.createNode(newNode);
+//     const newNodeWithId = { ...newNode, id: savedNode.insertId };
+    
+//     // Agregar el nuevo nodo al estado
+//     setNodes(prev => [...prev, newNodeWithId]);
+    
+//     // Si estamos en modo de enlace, crear conexión automáticamente
+//     if (linkingMode && linkSource) {
+//       createLink(linkSource, newNodeWithId);
+//     }
+    
+//     setShowNodeModal(false);
+//     setIsAddingMode(false);
+//     setSelectedNodeType(null);
+//     setSelectedNode(null);
+    
+//     Alert.alert(t('success'), `${selectedNode.type} ${t('nodeAdded')}`);
+
+//   } catch (error) {
+//     // // console.log(t('errorAddingNode'), error);
+//     Alert.alert(t('error'), t('failedAddNode'));
+//   }
+// };
 
 const addNode = async () => {
   try {
@@ -618,465 +781,268 @@ const addNode = async () => {
       project_id: projectId,
       name: nodeForm.name,
       type: selectedNode.type,
-      description: `${selectedNode.type} node`,
+      description: `${selectedNode.type} ${t('node')}`,
       latitude: selectedNode.latitude,
       longitude: selectedNode.longitude,
       owner: nodeForm.owner,
       address: nodeForm.address,
-      fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
+      fibers: nodeForm.selectedFibers,
       devices: nodeForm.selectedDevices,
       status: 'active',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // Agregar una bandera para indicar que fue creado en modo enlace
+      createdInLinkingMode: linkingMode && linkSource ? true : undefined
     };
 
     const savedNode = await NodeService.createNode(newNode);
-    setNodes(prev => [...prev, { ...newNode, id: savedNode.insertId }]);
+    const newNodeWithId = { ...newNode, id: savedNode.insertId };
+    
+    // Agregar el nuevo nodo al estado
+    setNodes(prev => [...prev, newNodeWithId]);
+    
+    // Si estamos en modo de enlace, crear conexión automáticamente
+    if (linkingMode && linkSource) {
+      createLink(linkSource, newNodeWithId);
+    }
     
     setShowNodeModal(false);
     setIsAddingMode(false);
     setSelectedNodeType(null);
     setSelectedNode(null);
     
-    Alert.alert('Success', `${selectedNode.type} node added successfully`);
+    // Alert.alert(t('success'), `${selectedNode.type} ${t('nodeAdded')}`);
+    // showNotification(t('nodeAdded'), 'success');
+    showNotification(`${selectedNode.type} ${t('nodeAdded')}`, 'success');
 
   } catch (error) {
-    console.log('Error adding node:', error);
-    Alert.alert('Error', 'Failed to add node');
+    // // console.log(t('errorAddingNode'), error);
+    // Alert.alert(t('error'), t('failedAddNode'));
+    showNotification(t('failedAddNode'), 'error');
   }
 };
-
-  // Seleccionar tipo de nodo
+  
   const selectNodeType = (type) => {
     setSelectedNodeType(type);
     setIsAddingMode(true);
   };
 
-const selectNode = async (node) => {
-  setSelectedNode(node);
-  
-  const matchedDevices = devices.filter(device => 
-    node.devices?.some(nd => 
-      nd.type === device.type && nd.ports === device.ports
-    )
-  ).map(device => {
-    const nodeDevice = node.devices.find(nd => 
-      nd.type === device.type && nd.ports === device.ports
-    );
-    return {
-      ...device,
-      quantity: nodeDevice?.quantity || 1
-    };
-  });
-  
-  // Cambiar para manejar múltiples fibras
-  const matchedFibers = fibers.filter(fiber => 
-    node.fibers?.some(nf => nf.type === fiber.type)
-  ).map(fiber => {
-    const nodeFiber = node.fibers?.find(nf => nf.type === fiber.type);
-    return {
-      ...fiber,
-      quantity: nodeFiber?.quantity || 1,
-      colors: nodeFiber?.colors || []
-    };
-  });
-  
-  setNodeForm({
-    name: node.name || '',
-    owner: node.owner || '',
-    address: node.address || '',
-    selectedFibers: matchedFibers || [], // Cambiado de selectedFiber a selectedFibers
-    selectedDevices: matchedDevices || []
-  });
-  
-  setShowNodeModal(true);
-};
-
-const updateNode = async () => {
-  try {
-    const updatedNodes = nodes.map(node =>
-      node.id === selectedNode.id
-        ? {
-            ...node,
-            name: nodeForm.name,
-            owner: nodeForm.owner,
-            address: nodeForm.address,
-            fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
-            devices: nodeForm.selectedDevices
-          }
-        : node
-    );
-
-    setNodes(updatedNodes);
+  const selectNode = async (node) => {
+    setSelectedNode(node);
     
-    await NodeService.updateNode(selectedNode.id, {
-      name: nodeForm.name,
-      owner: nodeForm.owner,
-      address: nodeForm.address,
-      fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
-      devices: nodeForm.selectedDevices
+    const matchedDevices = devices.filter(device => 
+      node.devices?.some(nd => 
+        nd.type === device.type && nd.ports === device.ports
+      )
+    ).map(device => {
+      const nodeDevice = node.devices.find(nd => 
+        nd.type === device.type && nd.ports === device.ports
+      );
+      return {
+        ...device,
+        quantity: nodeDevice?.quantity || 1
+      };
     });
     
-    setShowNodeModal(false);
-    setSelectedNode(null);
-    Alert.alert('Success', `Node ${selectedNode.name} updated`);
-
-  } catch (error) {
-    console.log('Error updating node:', error);
-    Alert.alert('Error', 'Failed to update node');
-  }
-};
-
-
-// const updateDeviceQuantity = (device, newQuantity) => {
-//   if (newQuantity < 0) return;
-  
-//   const availableCount = getAvailableCount(device) + getAssignedInThisNode(device);
-//   if (newQuantity > availableCount) {
-//     Alert.alert('Not available', `Only ${availableCount} ${device.type} available`);
-//     return;
-//   }
-  
-//   setNodeForm(prev => {
-
-//     const currentDevices = prev.selectedDevices || [];
-//   const currentFibers = prev.selectedFibers || [];
-//     const deviceKey = `${device.type}-${device.ports}`;
-//     const isSelected = prev.selectedDevices.some(d => 
-//       `${d.type}-${d.ports}` === deviceKey
-//     );
+    // Cambiar para manejar múltiples fibras
+    const matchedFibers = fibers.filter(fiber => 
+      node.fibers?.some(nf => nf.type === fiber.type)
+    ).map(fiber => {
+      const nodeFiber = node.fibers?.find(nf => nf.type === fiber.type);
+      return {
+        ...fiber,
+        quantity: nodeFiber?.quantity || 1,
+        colors: nodeFiber?.colors || []
+      };
+    });
     
-//     if (isSelected) {
-//       // Actualizar cantidad
-//       return {
-//         ...prev,
-//         selectedDevices: prev.selectedDevices.map(d => 
-//           `${d.type}-${d.ports}` === deviceKey 
-//             ? { ...d, quantity: newQuantity }
-//             : d
-//         )
-//       };
-//     } else if (newQuantity > 0) {
-//       // Agregar nuevo dispositivo
-//       return {
-//         ...prev,
-//         selectedDevices: [...prev.selectedDevices, { 
-//           ...device, 
-//           quantity: newQuantity,
-//           portsUsed: [] // Array para puertos utilizados
-//         }]
-//       };
-//     } else {
-//       // Eliminar dispositivo si cantidad es 0
-//       return {
-//         ...prev,
-//         selectedDevices: prev.selectedDevices.filter(d => 
-//           `${d.type}-${d.ports}` !== deviceKey
-//         )
-//       };
-//     }
-//   });
-// };
-const updateDeviceQuantity = (device, newQuantity) => {
-  if (newQuantity < 0) return;
-  
-  const availableCount = getAvailableCount(device) + getAssignedInThisNode(device);
-  if (newQuantity > availableCount) {
-    Alert.alert('Not available', `Only ${availableCount} ${device.type} available`);
-    return;
-  }
-  
-  setNodeForm(prev => {
-    const deviceKey = `${device.type}-${device.ports}`;
-    const isSelected = prev.selectedDevices.some(d => 
-      `${d.type}-${d.ports}` === deviceKey
-    );
+    setNodeForm({
+      name: node.name || '',
+      owner: node.owner || '',
+      address: node.address || '',
+      selectedFibers: matchedFibers || [], // Cambiado de selectedFiber a selectedFibers
+      selectedDevices: matchedDevices || []
+    });
     
-    if (isSelected) {
-      // Actualizar cantidad
-      return {
-        ...prev,
-        selectedDevices: prev.selectedDevices.map(d => 
-          `${d.type}-${d.ports}` === deviceKey 
-            ? { 
-                ...d, 
-                quantity: newQuantity,
-                // Asegurar que portsUsed exista
-                portsUsed: d.portsUsed || []
-              }
-            : d
-        )
-      };
-    } else if (newQuantity > 0) {
-      // Agregar nuevo dispositivo - SOLO propiedades necesarias
-      return {
-        ...prev,
-        selectedDevices: [...prev.selectedDevices, { 
-          type: device.type,
-          ports: device.ports,
-          quantity: newQuantity,
-          portsUsed: [] // Array para puertos utilizados
-        }]
-      };
-    } else {
-      // Eliminar dispositivo si cantidad es 0
-      return {
-        ...prev,
-        selectedDevices: prev.selectedDevices.filter(d => 
-          `${d.type}-${d.ports}` !== deviceKey
-        )
-      };
+    setShowNodeModal(true);
+  };
+
+  const updateNode = async () => {
+    try {
+      const updatedNodes = nodes.map(node =>
+        node.id === selectedNode.id
+          ? {
+              ...node,
+              name: nodeForm.name,
+              owner: nodeForm.owner,
+              address: nodeForm.address,
+              fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
+              devices: nodeForm.selectedDevices
+            }
+          : node
+      );
+
+      setNodes(updatedNodes);
+      
+      await NodeService.updateNode(selectedNode.id, {
+        name: nodeForm.name,
+        owner: nodeForm.owner,
+        address: nodeForm.address,
+        fibers: nodeForm.selectedFibers, // Cambiado de fiber a fibers
+        devices: nodeForm.selectedDevices
+      });
+      
+      setShowNodeModal(false);
+      setSelectedNode(null);
+      // Alert.alert(t('success'), `${t('node')} ${selectedNode.name} ${t('updated')}`);
+      showNotification(`${t('node')} ${selectedNode.name} ${t('updated')}`, 'success');
+
+    } catch (error) {
+      // // console.log(t('errorUpdatingNode'), error);
+      // Alert.alert(t('error'), t('failedUpdateNode'));
+      showNotification(t('failedUpdateNode'), 'error');
     }
-  });
-};
+  };
 
-const getAvailableFiberCount = (fiber) => {
-  const totalAssigned = nodes.reduce((count, node) => {
-    if (node.id === selectedNode?.id) return count;
+  const updateDeviceQuantity = (device, newQuantity) => {
+    if (newQuantity < 0) return;
     
-    const assignedCount = node.fibers?.filter(f => 
-      f.type === fiber.type
-    ).reduce((sum, f) => sum + (f.quantity || 1), 0) || 0;
-    
-    return count + assignedCount;
-  }, 0);
-
-  return Math.max(0, fiber.count - totalAssigned);
-};
-
-// Función para obtener la cantidad ya asignada en este nodo
-const getAssignedFiberInThisNode = (fiber) => {
-  if (!selectedNode?.id) return 0;
-  
-  const node = nodes.find(n => n.id === selectedNode.id);
-  
-  if (!node || !node.fibers) return 0;
-  
-  const assignedFiber = node.fibers.find(f => f.type === fiber.type);
-  
-  return assignedFiber ? (assignedFiber.quantity || 1) : 0;
-};
-
-// const updateFiberQuantity = (fiber, newQuantity) => {
-//   if (newQuantity < 0) return;
-  
-//   const availableCount = getAvailableFiberCount(fiber) + getAssignedFiberInThisNode(fiber);
-//   if (newQuantity > availableCount) {
-//     Alert.alert('Not available', `Only ${availableCount} ${fiber.type} available`);
-//     return;
-//   }
-  
-//   setNodeForm(prev => {
-//     const currentDevices = prev.selectedDevices || [];
-//     const currentFibers = prev.selectedFibers || [];
-//     const isSelected = prev.selectedFibers.some(f => f.type === fiber.type);
-    
-//     if (isSelected) {
-//       // Actualizar cantidad
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.map(f => 
-//           f.type === fiber.type 
-//             ? { 
-//                 ...f, 
-//                 quantity: newQuantity,
-//                 colors: newQuantity > 0 ? 
-//                   Array(newQuantity).fill().map((_, i) => ({
-//                     color: `Color ${i + 1}`,
-//                     used: false
-//                   })) : []
-//               }
-//             : f
-//         )
-//       };
-//     } else if (newQuantity > 0) {
-//       // Agregar nueva fibra
-//       return {
-//         ...prev,
-//         selectedFibers: [...prev.selectedFibers, { 
-//           ...fiber, 
-//           quantity: newQuantity,
-//           colors: Array(newQuantity).fill().map((_, i) => ({
-//             color: `Color ${i + 1}`,
-//             used: false
-//           }))
-//         }]
-//       };
-//     } else {
-//       // Eliminar fibra si cantidad es 0
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.filter(f => f.type !== fiber.type)
-//       };
-//     }
-//   });
-// };
-// const updateFiberQuantity = (fiber, newQuantity) => {
-//   if (newQuantity < 0) return;
-  
-//   const availableCount = getAvailableFiberCount(fiber) + getAssignedFiberInThisNode(fiber);
-//   if (newQuantity > availableCount) {
-//     Alert.alert('Not available', `Only ${availableCount} ${fiber.type} available`);
-//     return;
-//   }
-  
-//   setNodeForm(prev => {
-//     const isSelected = prev.selectedFibers.some(f => f.type === fiber.type);
-    
-//     if (isSelected) {
-//       // Actualizar cantidad
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.map(f => 
-//           f.type === fiber.type 
-//             ? { 
-//                 type: fiber.type,
-//                 quantity: newQuantity,
-//                 colors: newQuantity > 0 ? 
-//                   Array(newQuantity).fill().map((_, i) => ({
-//                     color: `Color ${i + 1}`,
-//                     description: '',
-//                     connectedTo: ''
-//                   })) : []
-//               }
-//             : f
-//         )
-//       };
-//     } else if (newQuantity > 0) {
-//       // Agregar nueva fibra - SOLO propiedades necesarias
-//       return {
-//         ...prev,
-//         selectedFibers: [...prev.selectedFibers, { 
-//           type: fiber.type,
-//           quantity: newQuantity,
-//           colors: Array(newQuantity).fill().map((_, i) => ({
-//             color: `Color ${i + 1}`,
-//             description: '',
-//             connectedTo: ''
-//           }))
-//         }]
-//       };
-//     } else {
-//       // Eliminar fibra si cantidad es 0
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.filter(f => f.type !== fiber.type)
-//       };
-//     }
-//   });
-// };
-// const updateFiberQuantity = (fiber, newQuantity) => {
-//   if (newQuantity < 0) return;
-  
-//   const availableCount = getAvailableFiberCount(fiber) + getAssignedFiberInThisNode(fiber);
-//   if (newQuantity > availableCount) {
-//     Alert.alert('Not available', `Only ${availableCount} ${fiber.type} available`);
-//     return;
-//   }
-  
-//   setNodeForm(prev => {
-//     const isSelected = prev.selectedFibers.some(f => f.type === fiber.type);
-//     const standardColors = getStandardFiberColors(fiber.type);
-    
-//     if (isSelected) {
-//       // Actualizar cantidad usando colores estándar
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.map(f => 
-//           f.type === fiber.type 
-//             ? { 
-//                 type: fiber.type,
-//                 quantity: newQuantity,
-//                 colors: newQuantity > 0 ? 
-//                   standardColors.slice(0, newQuantity).map((color, index) => ({
-//                     color: color,
-//                     description: f.colors && f.colors[index] ? f.colors[index].description : '',
-//                     connectedTo: f.colors && f.colors[index] ? f.colors[index].connectedTo : ''
-//                   })) : []
-//               }
-//             : f
-//         )
-//       };
-//     } else if (newQuantity > 0) {
-//       // Agregar nueva fibra usando colores estándar
-//       return {
-//         ...prev,
-//         selectedFibers: [...prev.selectedFibers, { 
-//           type: fiber.type,
-//           quantity: newQuantity,
-//           colors: standardColors.slice(0, newQuantity).map((color, index) => ({
-//             color: color,
-//             description: '',
-//             connectedTo: ''
-//           }))
-//         }]
-//       };
-//     } else {
-//       // Eliminar fibra si cantidad es 0
-//       return {
-//         ...prev,
-//         selectedFibers: prev.selectedFibers.filter(f => f.type !== fiber.type)
-//       };
-//     }
-//   });
-// };
-const updateFiberQuantity = (fiber, newQuantity) => {
-  if (newQuantity < 0) return;
-  
-  const availableCount = getAvailableFiberCount(fiber) + getAssignedFiberInThisNode(fiber);
-  if (newQuantity > availableCount) {
-    Alert.alert('Not available', `Only ${availableCount} ${fiber.type} available`);
-    return;
-  }
-  
-  setNodeForm(prev => {
-    const isSelected = prev.selectedFibers.some(f => f.type === fiber.type);
-    const standardColors = getStandardFiberColors(fiber.type);
-    
-    if (isSelected) {
-      // Actualizar solo la cantidad, preservar los colores existentes
-      return {
-        ...prev,
-        selectedFibers: prev.selectedFibers.map(f => 
-          f.type === fiber.type 
-            ? { 
-                ...f, // Mantener todas las propiedades incluyendo colors
-                quantity: newQuantity
-              }
-            : f
-        )
-      };
-    } else if (newQuantity > 0) {
-      // Agregar nueva fibra con todos los colores estándar
-      return {
-        ...prev,
-        selectedFibers: [...prev.selectedFibers, { 
-          type: fiber.type,
-          quantity: newQuantity,
-          colors: standardColors.map((color, index) => ({
-            color: color,
-            description: '',
-            connectedTo: ''
-          }))
-        }]
-      };
-    } else {
-      // Eliminar fibra si cantidad es 0
-      return {
-        ...prev,
-        selectedFibers: prev.selectedFibers.filter(f => f.type !== fiber.type)
-      };
+    const availableCount = getAvailableCount(device) + getAssignedInThisNode(device);
+    if (newQuantity > availableCount) {
+      // Alert.alert(t('notAvailable'), `${t('onlyAvailable')} ${availableCount} ${device.type}`);
+      showNotification(`${t('onlyAvailable')} ${availableCount} ${device.type}`, 'warning');
+      return;
     }
-  });
-};
+    
+    setNodeForm(prev => {
+      const deviceKey = `${device.type}-${device.ports}`;
+      const isSelected = prev.selectedDevices.some(d => 
+        `${d.type}-${d.ports}` === deviceKey
+      );
+      
+      if (isSelected) {
+        // Actualizar cantidad
+        return {
+          ...prev,
+          selectedDevices: prev.selectedDevices.map(d => 
+            `${d.type}-${d.ports}` === deviceKey 
+              ? { 
+                  ...d, 
+                  quantity: newQuantity,
+                  // Asegurar que portsUsed exista
+                  portsUsed: d.portsUsed || []
+                }
+              : d
+          )
+        };
+      } else if (newQuantity > 0) {
+        // Agregar nuevo dispositivo - SOLO propiedades necesarias
+        return {
+          ...prev,
+          selectedDevices: [...prev.selectedDevices, { 
+            type: device.type,
+            ports: device.ports,
+            quantity: newQuantity,
+            portsUsed: [] // Array para puertos utilizados
+          }]
+        };
+      } else {
+        // Eliminar dispositivo si cantidad es 0
+        return {
+          ...prev,
+          selectedDevices: prev.selectedDevices.filter(d => 
+            `${d.type}-${d.ports}` !== deviceKey
+          )
+        };
+      }
+    });
+  };
+
+  const getAvailableFiberCount = (fiber) => {
+    const totalAssigned = nodes.reduce((count, node) => {
+      if (node.id === selectedNode?.id) return count;
+      
+      const assignedCount = node.fibers?.filter(f => 
+        f.type === fiber.type
+      ).reduce((sum, f) => sum + (f.quantity || 1), 0) || 0;
+      
+      return count + assignedCount;
+    }, 0);
+
+    return Math.max(0, fiber.count - totalAssigned);
+  };
+
+  // Función para obtener la cantidad ya asignada en este nodo
+  const getAssignedFiberInThisNode = (fiber) => {
+    if (!selectedNode?.id) return 0;
+    
+    const node = nodes.find(n => n.id === selectedNode.id);
+    
+    if (!node || !node.fibers) return 0;
+    
+    const assignedFiber = node.fibers.find(f => f.type === fiber.type);
+    
+    return assignedFiber ? (assignedFiber.quantity || 1) : 0;
+  };
+
+  const updateFiberQuantity = (fiber, newQuantity) => {
+    if (newQuantity < 0) return;
+    
+    const availableCount = getAvailableFiberCount(fiber) + getAssignedFiberInThisNode(fiber);
+    if (newQuantity > availableCount) {
+      // Alert.alert(t('notAvailable'), `${t('onlyAvailable')} ${availableCount} ${fiber.type}`);
+      showNotification(`${t('onlyAvailable')} ${availableCount} ${fiber.type}`, 'warning');
+      return;
+    }
+    
+    setNodeForm(prev => {
+      const isSelected = prev.selectedFibers.some(f => f.type === fiber.type);
+      const standardColors = getStandardFiberColors(fiber.type);
+      
+      if (isSelected) {
+        // Actualizar solo la cantidad, preservar los colores existentes
+        return {
+          ...prev,
+          selectedFibers: prev.selectedFibers.map(f => 
+            f.type === fiber.type 
+              ? { 
+                  ...f, // Mantener todas las propiedades incluyendo colors
+                  quantity: newQuantity
+                }
+              : f
+          )
+        };
+      } else if (newQuantity > 0) {
+        // Agregar nueva fibra con todos los colores estándar
+        return {
+          ...prev,
+          selectedFibers: [...prev.selectedFibers, { 
+            type: fiber.type,
+            quantity: newQuantity,
+            colors: standardColors.map((color, index) => ({
+              color: color,
+              description: '',
+              connectedTo: ''
+            }))
+          }]
+        };
+      } else {
+        // Eliminar fibra si cantidad es 0
+        return {
+          ...prev,
+          selectedFibers: prev.selectedFibers.filter(f => f.type !== fiber.type)
+        };
+      }
+    });
+  };
 
   // Obtener color según tipo de nodo
   const getNodeColor = (type) => {
     switch (type) {
-      case 'MDF': return '#e74c3c';
-      case 'pedestal': return '#3498db';
-      case 'IDF': return '#2ecc71';
-      case 'unit': return '#f39c12';
-      default: return '#7f8c8d';
+      case 'MDF': return theme.accent;
+      case 'pedestal': return theme.primary;
+      // case 'IDF': return theme.success;
+      case 'unit': return theme.warning;
+      default: return theme.lightText;
     }
   };
 
@@ -1085,24 +1051,150 @@ const updateFiberQuantity = (fiber, newQuantity) => {
     switch (type) {
       case 'MDF': return 'server';
       case 'pedestal': return 'cube';
-      case 'IDF': return 'hardware-chip';
+      // case 'IDF': return 'hardware-chip';
       case 'unit': return 'home';
       default: return 'help';
     }
   };
 
- 
+  // const getConnections = () => {
+  //   const connections = [];
+    
+  //   // Si no hay nodos o solo hay uno, no hay conexiones
+  //   if (nodes.length <= 1) return connections;
+    
+  //   // Filtrar nodos válidos (con coordenadas)
+  //   const validNodes = nodes.filter(node => 
+  //     node.latitude && node.longitude && 
+  //     typeof node.latitude === 'number' && 
+  //     typeof node.longitude === 'number'
+  //   );
+    
+  //   if (validNodes.length <= 1) return connections;
+    
+  //   // Ordenar nodos por fecha de creación (timestamp)
+  //   const sortedNodes = [...validNodes].sort((a, b) => {
+  //     // Ordenar por timestamp si está disponible
+  //     if (a.createdAt && b.createdAt) {
+  //       return new Date(a.createdAt) - new Date(b.createdAt);
+  //     }
+      
+  //     // Fallback: ordenar por ID si no hay timestamp
+  //     return (a.id || '').localeCompare(b.id || '');
+  //   });
+    
+  //   // Asegurar que el MDF sea el primer nodo si existe
+  //   const mdfIndex = sortedNodes.findIndex(node => node.type === 'MDF');
+  //   if (mdfIndex > 0) {
+  //     // Si el MDF no es el primero, moverlo al principio
+  //     const mdfNode = sortedNodes.splice(mdfIndex, 1)[0];
+  //     sortedNodes.unshift(mdfNode);
+  //   }
+    
+  //   // Conectar cada nodo con el anterior (empezando desde el segundo nodo)
+  //   for (let i = 1; i < sortedNodes.length; i++) {
+  //     const previousNode = sortedNodes[i - 1];
+  //     const currentNode = sortedNodes[i];
+      
+  //     // Verificar que ambos nodos tengan coordenadas válidas
+  //     if (previousNode.latitude && previousNode.longitude && 
+  //         currentNode.latitude && currentNode.longitude) {
+  //       connections.push({
+  //         from: previousNode,
+  //         to: currentNode,
+  //         color: getConnectionColor(previousNode.type, currentNode.type),
+  //         type: `${previousNode.type}-${currentNode.type}`,
+  //         isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF'
+  //       });
+  //     }
+  //   }
+    
+  //   return connections;
+  // };
+
+//   const getConnections = () => {
+//   const connections = [];
+  
+//   // Si no hay nodos o solo hay uno, no hay conexiones
+//   if (nodes.length <= 1) return connections;
+  
+//   // Filtrar nodos válidos (con coordenadas) y que no hayan sido creados en modo enlace
+//   const validNodes = nodes.filter(node => 
+//     node.latitude && node.longitude && 
+//     typeof node.latitude === 'number' && 
+//     typeof node.longitude === 'number' &&
+//     !node.createdInLinkingMode // Excluir nodos creados en modo enlace
+//   );
+  
+//   if (validNodes.length <= 1) return connections;
+  
+//   // Ordenar nodos por fecha de creación (timestamp)
+//   const sortedNodes = [...validNodes].sort((a, b) => {
+//     // Ordenar por timestamp si está disponible
+//     if (a.createdAt && b.createdAt) {
+//       return new Date(a.createdAt) - new Date(b.createdAt);
+//     }
+    
+//     // Fallback: ordenar por ID si no hay timestamp
+//     return (a.id || '').localeCompare(b.id || '');
+//   });
+  
+//   // Asegurar que el MDF sea el primer nodo si existe
+//   const mdfIndex = sortedNodes.findIndex(node => node.type === 'MDF');
+//   if (mdfIndex > 0) {
+//     // Si el MDF no es el primero, moverlo al principio
+//     const mdfNode = sortedNodes.splice(mdfIndex, 1)[0];
+//     sortedNodes.unshift(mdfNode);
+//   }
+  
+//   // Conectar cada nodo con el anterior (empezando desde el segundo nodo)
+//   for (let i = 1; i < sortedNodes.length; i++) {
+//     const previousNode = sortedNodes[i - 1];
+//     const currentNode = sortedNodes[i];
+    
+//     // Verificar que ambos nodos tengan coordenadas válidas
+//     if (previousNode.latitude && previousNode.longitude && 
+//         currentNode.latitude && currentNode.longitude) {
+      
+//       // Verificar si esta conexión ya existe en las conexiones manuales
+//       const connectionExists = connections.some(manualConn => {
+//         const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
+//         const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
+//         const autoFromId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
+//         const autoToId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
+        
+//         return (manualFromId === autoFromId && manualToId === autoToId) ||
+//                (manualFromId === autoToId && manualToId === autoFromId);
+//       });
+      
+//       // Solo agregar la conexión automática si no existe una manual
+//       if (!connectionExists) {
+//         connections.push({
+//           from: previousNode,
+//           to: currentNode,
+//           color: getConnectionColor(previousNode.type, currentNode.type),
+//           type: `${previousNode.type}-${currentNode.type}`,
+//           isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
+//           isAutomatic: true // Marcar como conexión automática
+//         });
+//       }
+//     }
+//   }
+  
+//   return connections;
+// };
 const getConnections = () => {
   const connections = [];
   
   // Si no hay nodos o solo hay uno, no hay conexiones
   if (nodes.length <= 1) return connections;
   
-  // Filtrar nodos válidos (con coordenadas)
+  // Filtrar nodos válidos (con coordenadas) y que no hayan sido creados en modo enlace
   const validNodes = nodes.filter(node => 
     node.latitude && node.longitude && 
     typeof node.latitude === 'number' && 
-    typeof node.longitude === 'number'
+    typeof node.longitude === 'number' &&
+    !node.createdInLinkingMode // Excluir nodos creados en modo enlace
   );
   
   if (validNodes.length <= 1) return connections;
@@ -1134,121 +1226,308 @@ const getConnections = () => {
     // Verificar que ambos nodos tengan coordenadas válidas
     if (previousNode.latitude && previousNode.longitude && 
         currentNode.latitude && currentNode.longitude) {
-      connections.push({
-        from: previousNode,
-        to: currentNode,
-        color: getConnectionColor(previousNode.type, currentNode.type),
-        type: `${previousNode.type}-${currentNode.type}`,
-        isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF'
+      
+      // Verificar si esta conexión ya existe en las conexiones manuales
+      const connectionExists = connections.some(manualConn => {
+        const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
+        const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
+        const autoFromId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
+        const autoToId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
+        
+        return (manualFromId === autoFromId && manualToId === autoToId) ||
+               (manualFromId === autoToId && manualToId === autoFromId);
       });
+      
+      // Solo agregar la conexión automática si no existe una manual
+      if (!connectionExists) {
+        connections.push({
+          from: previousNode,
+          to: currentNode,
+          color: getConnectionColor(previousNode.type, currentNode.type),
+          type: `${previousNode.type}-${currentNode.type}`,
+          isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
+          isAutomatic: true // Asegurar que esta propiedad esté presente
+        });
+      }
     }
   }
   
   return connections;
 };
 
-// Obtener color de conexión según tipos de nodos
-const getConnectionColor = (typeA, typeB) => {
-  if (typeA === 'MDF' || typeB === 'MDF') {
-    return '#e74c3c'; // Rojo para conexiones con MDF
-  }
+  // Obtener color de conexión según tipos de nodos
   
-  if (typeA === 'pedestal' && typeB === 'pedestal') {
-    return '#3498db'; // Azul para conexiones entre pedestales
-  }
+//   const getConnections = () => {
+//   const connections = [];
   
-  if (typeA === 'IDF' && typeB === 'IDF') {
-    return '#2ecc71'; // Verde para conexiones entre IDFs
-  }
+//   // Si no hay nodos o solo hay uno, no hay conexiones
+//   if (nodes.length <= 1) return connections;
   
-  if ((typeA === 'IDF' && typeB === 'unit') || 
-      (typeA === 'unit' && typeB === 'IDF')) {
-    return '#f39c12'; // Naranja para IDF-Unit
-  }
+//   // Filtrar nodos válidos (con coordenadas)
+//   const validNodes = nodes.filter(node => 
+//     node.latitude && node.longitude && 
+//     typeof node.latitude === 'number' && 
+//     typeof node.longitude === 'number'
+//   );
   
-  if ((typeA === 'pedestal' && typeB === 'unit') || 
-      (typeA === 'unit' && typeB === 'pedestal')) {
-    return '#9b59b6'; // Púrpura para Pedestal-Unit
-  }
+//   if (validNodes.length <= 1) return connections;
   
-  // Conexiones mixtas (diferentes tipos de infraestructura)
-  if ((typeA === 'pedestal' && typeB === 'IDF') || 
-      (typeA === 'IDF' && typeB === 'pedestal')) {
-    return '#1abc9c'; // Turquesa para conexiones mixtas
-  }
+//   // Ordenar nodos por fecha de creación (timestamp)
+//   const sortedNodes = [...validNodes].sort((a, b) => {
+//     // Ordenar por timestamp si está disponible
+//     if (a.createdAt && b.createdAt) {
+//       return new Date(a.createdAt) - new Date(b.createdAt);
+//     }
+    
+//     // Fallback: ordenar por ID si no hay timestamp
+//     return (a.id || '').localeCompare(b.id || '');
+//   });
   
-  return '#7f8c8d'; // Gris por defecto
+//   // Asegurar que el MDF sea el primer nodo si existe
+//   const mdfIndex = sortedNodes.findIndex(node => node.type === 'MDF');
+//   if (mdfIndex > 0) {
+//     // Si el MDF no es el primero, moverlo al principio
+//     const mdfNode = sortedNodes.splice(mdfIndex, 1)[0];
+//     sortedNodes.unshift(mdfNode);
+//   }
+  
+//   // Conectar cada nodo con el anterior (empezando desde el segundo nodo)
+//   for (let i = 1; i < sortedNodes.length; i++) {
+//     const previousNode = sortedNodes[i - 1];
+//     const currentNode = sortedNodes[i];
+    
+//     // Verificar que ambos nodos tengan coordenadas válidas
+//     if (previousNode.latitude && previousNode.longitude && 
+//         currentNode.latitude && currentNode.longitude) {
+      
+//       // Verificar si esta conexión ya existe en las conexiones manuales
+//       const connectionExists = connections.some(manualConn => {
+//         const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
+//         const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
+//         const autoFromId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
+//         const autoToId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
+        
+//         return (manualFromId === autoFromId && manualToId === autoToId) ||
+//                (manualFromId === autoToId && manualToId === autoFromId);
+//       });
+      
+//       // Solo agregar la conexión automática si no existe una manual
+//       if (!connectionExists) {
+//         connections.push({
+//           from: previousNode,
+//           to: currentNode,
+//           color: getConnectionColor(previousNode.type, currentNode.type),
+//           type: `${previousNode.type}-${currentNode.type}`,
+//           isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF'
+//         });
+//       }
+//     }
+//   }
+  
+//   return connections;
+// };
+  
+  const getConnectionColor = (typeA, typeB) => {
+    if (typeA === 'MDF' || typeB === 'MDF') {
+      return theme.accent; // Color de acento para conexiones con MDF
+    }
+    
+    if (typeA === 'pedestal' && typeB === 'pedestal') {
+      return theme.primary; // Color primario para conexiones entre pedestales
+    }
+    
+    if (typeA === 'IDF' && typeB === 'IDF') {
+      return theme.success; // Color de éxito para conexiones entre IDFs
+    }
+    
+    if ((typeA === 'IDF' && typeB === 'unit') || 
+        (typeA === 'unit' && typeB === 'IDF')) {
+      return theme.warning; // Color de advertencia para IDF-Unit
+    }
+    
+    if ((typeA === 'pedestal' && typeB === 'unit') || 
+        (typeA === 'unit' && typeB === 'pedestal')) {
+      return '#9b59b6'; // Púrpura para Pedestal-Unit
+    }
+    
+    // Conexiones mixtas (diferentes tipos de infraestructura)
+    if ((typeA === 'pedestal' && typeB === 'IDF') || 
+        (typeA === 'IDF' && typeB === 'pedestal')) {
+      return '#1abc9c'; // Turquesa para conexiones mixtas
+    }
+    
+    return theme.lightText; // Color de texto claro por defecto
+  };
+
+const createLink = async (fromNode, toNode) => {
+  // Verificar que ambos nodos existen y son diferentes
+  if (!fromNode || !toNode) {
+    // Alert.alert('Error', 'Nodos inválidos');
+    showNotification('Nodos inválidos', 'error');
+    return;
+  }
+
+  // Usar una comparación más robusta para IDs
+  const fromId = fromNode.id || `temp-${fromNode.latitude}-${fromNode.longitude}`;
+  const toId = toNode.id || `temp-${toNode.latitude}-${toNode.longitude}`;
+  
+  if (fromId === toId) {
+    // Alert.alert('Error', 'No puedes enlazar un nodo consigo mismo');
+    showNotification('No puedes enlazar un nodo consigo mismo', 'error');
+    return;
+  }
+
+  // Evitar duplicados con comparación robusta
+  const exists = connections.some(
+    c => {
+      const cFromId = c.from.id || `temp-${c.from.latitude}-${c.from.longitude}`;
+      const cToId = c.to.id || `temp-${c.to.latitude}-${c.to.longitude}`;
+      
+      return (cFromId === fromId && cToId === toId) ||
+             (cFromId === toId && cToId === fromId);
+    }
+  );
+  
+  if (exists) {
+    // Alert.alert('Info', 'El enlace ya existe');
+    showNotification('El enlace ya existe', 'info');
+    setLinkingMode(false);
+    setLinkSource(null);
+    return;
+  }
+
+  const newConnection = {
+    from: fromNode,
+    to: toNode,
+    color: getConnectionColor(fromNode.type, toNode.type),
+    type: `${fromNode.type}-${toNode.type}`,
+    isBackbone: fromNode.type === 'MDF' || toNode.type === 'MDF',
+    isAutomatic: false 
+  };
+
+  // Guardar en estado local
+  setConnections(prev => [...prev, newConnection]);
+
+  // Salir del modo enlazar
+  setLinkingMode(false);
+  setLinkSource(null);
+  
+  // Alert.alert('Éxito', `Enlace creado entre ${fromNode.name} y ${toNode.name}`);
+  showNotification(`Enlace creado entre ${fromNode.name} y ${toNode.name}`, 'success');
+};
+  
+  const renderMarkers = () => {
+   return nodes.map((node, index) => {
+    // Asegurar que las coordenadas sean números válidos
+    const latitude = parseFloat(node.latitude);
+    const longitude = parseFloat(node.longitude);
+
+    // Validar coordenadas
+    if (isNaN(latitude) || isNaN(longitude)) {
+      // console.warn(`Coordenadas inválidas para nodo ${node.name}`, node);
+      return null;
+    }
+
+    return (
+      <Marker
+        key={`marker-${node.id || `temp-${index}-${latitude}-${longitude}`}`}
+        coordinate={{ latitude, longitude }}
+        onPress={() => {
+          if (linkingMode && linkSource) {
+            // Segundo tap -> crear enlace
+            // createLink(linkSource, node);
+            handleExistingNodeLink(node);
+          } else {
+            selectNode(node); // comportamiento normal
+          }
+        }}
+      >
+        <Pressable
+          onLongPress={() => {
+            setSelectedNodeForMenu(node);
+            setLinkMenuVisible(true);
+          }}
+          delayLongPress={600}
+        >
+          <View style={styles.markerContainer}>
+            <View style={[styles.marker, { 
+              backgroundColor: linkingMode && linkSource?.id === node.id ? 
+                theme.accent : getNodeColor(node.type) 
+            }]}>
+              <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
+            </View>
+            <View style={styles.markerLabel}>
+              <Text style={styles.markerText}>{node.name}</Text>
+              <Text style={styles.markerType}>{node.type}</Text>
+            </View>
+          </View>
+        </Pressable>
+      </Marker>
+    );
+  }).filter(Boolean);
 };
 
-
-
-// Determinar si dos nodos deberían conectarse
-const shouldConnectNodes = (nodeA, nodeB) => {
-  // No conectar unidades con otras unidades directamente
-  if (nodeA.type === 'unit' && nodeB.type === 'unit') return false;
+// const renderConnections = () => {
+//   const autoConnections = getConnections();
+//   const allConnections = [...autoConnections, ...connections];
   
-  // No conectar diferentes tipos de infraestructura directamente
-  if (nodeA.type === 'IDF' && nodeB.type === 'pedestal') return false;
-  if (nodeA.type === 'pedestal' && nodeB.type === 'IDF') return false;
-  
-  // Conectar nodos del mismo tipo
-  if (nodeA.type === nodeB.type) return true;
-  
-  // Conectar infraestructura con unidades
-  if ((nodeA.type === 'IDF' || nodeA.type === 'pedestal') && nodeB.type === 'unit') return true;
-  if ((nodeB.type === 'IDF' || nodeB.type === 'pedestal') && nodeA.type === 'unit') return true;
-  
-  return false;
-};
+//   return allConnections.map((connection, index) => {
+//     const fromId = connection.from.id || `temp-${connection.from.latitude}-${connection.from.longitude}`;
+//     const toId = connection.to.id || `temp-${connection.to.latitude}-${connection.to.longitude}`;
+    
+//     // Validación adicional para evitar líneas fantasma
+//     if (!connection.from.latitude || !connection.from.longitude ||
+//         !connection.to.latitude || !connection.to.longitude) {
+//       return null;
+//     }
+    
+//     // Crear una clave única que incluya el tipo de conexión (automática vs manual)
+//     const connectionType = connection.isAutomatic ? 'auto' : 'manual';
+//     const uniqueKey = `connection-${fromId}-${toId}-${index}-${connectionType}`;
+    
+//     return (
+//       <Polyline
+//         key={uniqueKey}
+//         coordinates={[
+//           {
+//             latitude: connection.from.latitude,
+//             longitude: connection.from.longitude
+//           },
+//           {
+//             latitude: connection.to.latitude,
+//             longitude: connection.to.longitude
+//           }
+//         ]}
+//         strokeColor={connection.color}
+//         strokeWidth={connection.isBackbone ? 4 : 3}
+//         lineDashPattern={connection.isBackbone ? [] : [5, 5]}
+//       />
+//     );
+//   }).filter(Boolean);
+// };
 
-  // Renderizar marcadores
-const renderMarkers = () => {
-  return nodes.map((node, index) => (
-    <Marker
-      key={`marker-${node.id || `temp-${index}-${node.latitude}-${node.longitude}`}`}
-      coordinate={{
-        latitude: node.latitude,
-        longitude: node.longitude
-      }}
-      onPress={() => selectNode(node)}
-    >
-      <View style={styles.markerContainer}>
-        <View style={[styles.marker, { backgroundColor: getNodeColor(node.type) }]}>
-          <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
-        </View>
-        <View style={styles.markerLabel}>
-          <Text style={styles.markerText}>{node.name}</Text>
-          <Text style={styles.markerType}>{node.type}</Text>
-        </View>
-      </View>
-    </Marker>
-  ));
-};
-
-  // Renderizar conexiones
 const renderConnections = () => {
-  const connections = getConnections();
+  const autoConnections = getConnections();
+  const allConnections = [...autoConnections, ...connections];
   
-  // Depuración: mostrar información sobre las conexiones
-  console.log('Rendering connections:', connections.length);
-  connections.forEach((conn, idx) => {
-    console.log(`Connection ${idx}: ${conn.from.name} -> ${conn.to.name}`);
-  });
-  
-  return connections.map((connection, index) => {
+  return allConnections.map((connection, index) => {
     const fromId = connection.from.id || `temp-${connection.from.latitude}-${connection.from.longitude}`;
     const toId = connection.to.id || `temp-${connection.to.latitude}-${connection.to.longitude}`;
     
     // Validación adicional para evitar líneas fantasma
     if (!connection.from.latitude || !connection.from.longitude ||
         !connection.to.latitude || !connection.to.longitude) {
-      console.log('Skipping invalid connection:', connection);
       return null;
     }
     
+    // Crear una clave única que incluya el tipo de conexión (automática vs manual)
+    // Usar un valor por defecto si isAutomatic no está definido
+    const connectionType = connection.isAutomatic === true ? 'auto' : 'manual';
+    const uniqueKey = `connection-${fromId}-${toId}-${index}-${connectionType}`;
+    
     return (
       <Polyline
-        key={`connection-${fromId}-${toId}-${index}`}
+        key={uniqueKey}
         coordinates={[
           {
             latitude: connection.from.latitude,
@@ -1264,65 +1543,109 @@ const renderConnections = () => {
         lineDashPattern={connection.isBackbone ? [] : [5, 5]}
       />
     );
-  }).filter(Boolean); // Filtrar cualquier conexión nula
+  }).filter(Boolean);
 };
 
 const deleteNode = async (nodeId) => {
-  try {
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this node? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          onPress: async () => {
-            try {
-              // Eliminar de la base de datos
-              const result = await NodeService.deleteNode(nodeId);
-              
-              if (result.rowsAffected > 0) {
-                // Eliminar del estado local
-                setNodes(prev => prev.filter(node => node.id !== nodeId));
-                
-                setShowNodeModal(false);
-                setSelectedNode(null);
-                
-                Alert.alert("Success", "Node deleted successfully");
-              } else {
-                Alert.alert("Error", "Node could not be deleted");
-              }
-            } catch (error) {
-              console.log('Error deleting node:', error);
-              Alert.alert('Error', 'Failed to delete node from database');
-            }
+    try {
+      Alert.alert(
+        t('confirmDelete'),
+        t('confirmDeleteNode'),
+        [
+          {
+            text: t('cancel'),
+            style: "cancel"
           },
-          style: "destructive"
-        }
-      ]
-    );
-  } catch (error) {
-    console.log('Error showing delete confirmation:', error);
-    Alert.alert('Error', 'Could not initiate delete operation');
-  }
-};
+          {
+            text: t('delete'),
+            onPress: async () => {
+              try {
+                // Eliminar de la base de datos
+                const result = await NodeService.deleteNode(nodeId);
+                
+                if (result.rowsAffected > 0) {
+                  // Eliminar del estado local
+                  setNodes(prev => prev.filter(node => node.id !== nodeId));
+                  
+                  setShowNodeModal(false);
+                  setSelectedNode(null);
+                  
+                  // Alert.alert(t('success'), t('nodeDeleted'));
+                  showNotification(t('nodeDeleted'), 'success');
+                } else {
+                  // Alert.alert(t('error'), t('nodeNotDeleted'));
+                  showNotification(t('nodeNotDeleted'), 'error');
+                }
+              } catch (error) {
+                // // // console.log(t('errorDeletingNode'), error);
+                // Alert.alert(t('error'), t('failedDeleteNode'));
+                showNotification(t('failedDeleteNode'), 'error');
+              }
+            },
+            style: "destructive"
+          }
+        ]
+      );
+    } catch (error) {
+      // // // console.log(t('errorDeleteConfirmation'), error);
+      Alert.alert(t('error'), t('couldNotInitiateDelete'));
+    }
+  };
 
-// Función para eliminar todos los nodos
-const clearAllNodes = async () => {
+  // Función para eliminar todos los nodos
+  // const clearAllNodes = async () => {
+  //   try {
+  //     Alert.alert(
+  //       t('confirmClearAll'),
+  //       t('confirmClearAllNodes'),
+  //       [
+  //         {
+  //           text: t('cancel'),
+  //           style: "cancel"
+  //         },
+  //         {
+  //           text: t('deleteAll'),
+  //           onPress: async () => {
+  //             try {
+  //               // Eliminar todos los nodos de la base de datos
+  //               const deletePromises = nodes.map(node => 
+  //                 NodeService.deleteNode(node.id)
+  //               );
+                
+  //               await Promise.all(deletePromises);
+                
+  //               // Limpiar el estado local
+  //               setNodes([]);
+  //               setSelectedNode(null);
+                
+  //               Alert.alert(t('success'), t('allNodesDeleted'));
+  //             } catch (error) {
+  //               // // // console.log(t('errorDeletingAllNodes'), error);
+  //               Alert.alert(t('error'), t('failedDeleteAllNodes'));
+  //             }
+  //           },
+  //           style: "destructive"
+  //         }
+  //       ]
+  //     );
+  //   } catch (error) {
+  //     // // // console.log(t('errorClearAllConfirmation'), error);
+  //     Alert.alert(t('error'), t('couldNotInitiateClearAll'));
+  //   }
+  // };
+
+  const clearAllNodes = async () => {
   try {
     Alert.alert(
-      "Confirm Clear All",
-      "Are you sure you want to delete ALL nodes? This action cannot be undone.",
+      t('confirmClearAll'),
+      t('confirmClearAllNodes'),
       [
         {
-          text: "Cancel",
+          text: t('cancel'),
           style: "cancel"
         },
         {
-          text: "Delete All",
+          text: t('deleteAll'),
           onPress: async () => {
             try {
               // Eliminar todos los nodos de la base de datos
@@ -1332,14 +1655,17 @@ const clearAllNodes = async () => {
               
               await Promise.all(deletePromises);
               
-              // Limpiar el estado local
+              // Limpiar el estado local de nodos Y conexiones
               setNodes([]);
+              setConnections([]); // ← Añadir esta línea
               setSelectedNode(null);
               
-              Alert.alert("Success", "All nodes have been deleted");
+              // Alert.alert(t('success'), t('allNodesDeleted'));
+              showNotification(t('allNodesDeleted'), 'success');
             } catch (error) {
-              console.log('Error deleting all nodes:', error);
-              Alert.alert('Error', 'Failed to delete all nodes');
+              // // console.log(t('errorDeletingAllNodes'), error);
+              // Alert.alert(t('error'), t('failedDeleteAllNodes'));
+               showNotification(t('failedDeleteAllNodes'), 'error');
             }
           },
           style: "destructive"
@@ -1347,8 +1673,8 @@ const clearAllNodes = async () => {
       ]
     );
   } catch (error) {
-    console.log('Error showing clear all confirmation:', error);
-    Alert.alert('Error', 'Could not initiate clear all operation');
+    // // console.log(t('errorClearAllConfirmation'), error);
+    Alert.alert(t('error'), t('couldNotInitiateClearAll'));
   }
 };
 
@@ -1376,466 +1702,177 @@ const clearAllNodes = async () => {
   };
 
   // Componente para configuración de dispositivos
+  const DeviceConfig = ({ device, onSave }) => {
+    const [ports, setPorts] = useState(
+      device.portsUsed && device.portsUsed.length > 0 
+        ? device.portsUsed 
+        : Array(device.ports).fill().map((_, i) => ({
+            port: i + 1,
+            description: '',
+            connectedTo: ''
+          }))
+    );
 
-const DeviceConfig = ({ device, onSave }) => {
-  const [ports, setPorts] = useState(
-    device.portsUsed && device.portsUsed.length > 0 
-      ? device.portsUsed 
-      : Array(device.ports).fill().map((_, i) => ({
-          port: i + 1,
-          description: '',
-          connectedTo: ''
-        }))
-  );
+    const saveConfiguration = () => {
+      onSave({
+        ...device,
+        portsUsed: ports
+      });
+    };
 
-  const saveConfiguration = () => {
-    onSave({
-      ...device,
-      portsUsed: ports
-    });
+    return (
+      <View>
+        <Text style={styles.configSectionTitle}>{device.type} - {device.ports} {t('ports')}</Text>
+        
+        {ports.map((port, index) => (
+          <View key={index} style={styles.portItem}>
+            <Text style={styles.portLabel}>{t('port')} {port.port}:</Text>
+            <TextInput
+              style={styles.portInput}
+              value={port.description}
+              onChangeText={(text) => {
+                const newPorts = [...ports];
+                newPorts[index].description = text;
+                setPorts(newPorts);
+              }}
+              placeholder={t('description')}
+            />
+            <TextInput
+              style={styles.portInput}
+              value={port.connectedTo}
+              onChangeText={(text) => {
+                const newPorts = [...ports];
+                newPorts[index].connectedTo = text;
+                setPorts(newPorts);
+              }}
+              placeholder={t('connectedTo')}
+            />
+          </View>
+        ))}
+        
+        <TouchableOpacity style={[styles.saveConfigButton, {backgroundColor: theme.success}]} onPress={saveConfiguration}>
+          <Text style={styles.saveConfigButtonText}>{t('saveConfiguration')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
-  return (
-    <View>
-      <Text style={styles.configSectionTitle}>{device.type} - {device.ports} Ports</Text>
-      
-      {ports.map((port, index) => (
-        <View key={index} style={styles.portItem}>
-          <Text style={styles.portLabel}>Port {port.port}:</Text>
-          <TextInput
-            style={styles.portInput}
-            value={port.description}
-            onChangeText={(text) => {
-              const newPorts = [...ports];
-              newPorts[index].description = text;
-              setPorts(newPorts);
-            }}
-            placeholder="Description"
-          />
-          <TextInput
-            style={styles.portInput}
-            value={port.connectedTo}
-            onChangeText={(text) => {
-              const newPorts = [...ports];
-              newPorts[index].connectedTo = text;
-              setPorts(newPorts);
-            }}
-            placeholder="Connected to"
-          />
-        </View>
-      ))}
-      
-      <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-        <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-// Función para obtener código hexadecimal de color basado en nombre
-// const getColorHexCode = (colorName) => {
-//   const colorMap = {
-//     'Blue': '#0000FF',
-//     'Orange': '#FFA500',
-//     'Green': '#008000',
-//     'Brown': '#A52A2A',
-//     'Slate': '#708090',
-//     'Gray': '#808080',
-//     'White': '#FFFFFF',
-//     'Red': '#FF0000',
-//     'Black': '#000000',
-//     'Yellow': '#FFFF00',
-//     'Violet': '#EE82EE',
-//     'Rose': '#FF007F',
-//     'Pink': '#FF007F',
-//     'Aqua': '#00FFFF'
-//   };
-  
-//   return colorMap[colorName] || '#CCCCCC';
-// };
-// Función para obtener código hexadecimal de color basado en nombre
-// const getColorHexCode = (colorName) => {
-//   // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
-//   const cleanColorName = colorName.split('-').pop().trim();
-  
-//   const colorMap = {
-//     'Blue': '#0000FF',
-//     'Orange': '#FFA500',
-//     'Green': '#008000',
-//     'Brown': '#A52A2A',
-//     'Slate': '#708090',
-//     'Gray': '#808080',
-//     'White': '#FFFFFF',
-//     'Red': '#FF0000',
-//     'Black': '#000000',
-//     'Yellow': '#FFFF00',
-//     'Violet': '#EE82EE',
-//     'Rose': '#FF007F',
-//     'Pink': '#FF007F',
-//     'Aqua': '#00FFFF'
-//   };
-  
-//   const hexColor = colorMap[cleanColorName] || '#CCCCCC';
-//   console.log('Color name:', cleanColorName, '-> Hex:', hexColor);
-//   return hexColor;
-// };
-const getColorHexCode = (colorName) => {
-  if (!colorName) return '#CCCCCC';
-  
-  // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
-  const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
-  
-  const colorMap = {
-    'blue': '#0000FF',
-    'orange': '#FFA500',
-    'green': '#008000',
-    'brown': '#A52A2A',
-    'slate': '#708090',
-    'gray': '#808080',
-    'white': '#FFFFFF',
-    'red': '#FF0000',
-    'black': '#000000',
-    'yellow': '#FFFF00',
-    'violet': '#EE82EE',
-    'rose': '#FF007F',
-    'pink': '#FF007F',
-    'aqua': '#00FFFF'
-  };
-  
-  const hexColor = colorMap[cleanColorName] || '#CCCCCC';
-  return hexColor;
-};
-
-// const FiberConfig = ({ fiber, onSave }) => {
-//   const [colors, setColors] = useState(
-//     fiber.colors && fiber.colors.length > 0 
-//       ? fiber.colors 
-//       : Array(fiber.quantity).fill().map((_, i) => ({
-//           color: `Color ${i + 1}`,
-//           description: '',
-//           connectedTo: ''
-//         }))
-//   );
-
-//   const saveConfiguration = () => {
-//     onSave({
-//       ...fiber,
-//       colors: colors
-//     });
-//   };
-
-//   return (
-//     <View>
-//       <Text style={styles.configSectionTitle}>{fiber.type} Fiber</Text>
-      
-//       {colors.map((color, index) => (
-//         <View key={index} style={styles.colorItem}>
-//           <Text style={styles.colorLabel}>{color.color}:</Text>
-//           <TextInput
-//             style={styles.colorInput}
-//             value={color.description}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].description = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Description"
-//           />
-//           <TextInput
-//             style={styles.colorInput}
-//             value={color.connectedTo}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].connectedTo = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Connected to"
-//           />
-//         </View>
-//       ))}
-      
-//       <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-//         <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-// const FiberConfig = ({ fiber, onSave }) => {
-//   // Obtener colores estándar según el tipo de fibra
-//   const standardColors = getStandardFiberColors(fiber.type);
-  
-//   const [colors, setColors] = useState(
-//     fiber.colors && fiber.colors.length > 0 
-//       ? fiber.colors 
-//       : standardColors.map((color, index) => ({
-//           color: color,
-//           description: '',
-//           connectedTo: ''
-//         }))
-//   );
-
-//   const saveConfiguration = () => {
-//     onSave({
-//       ...fiber,
-//       colors: colors
-//     });
-//   };
-
-//   return (
-//     <View>
-//       <Text style={styles.configSectionTitle}>{fiber.type} Fiber</Text>
-//       <Text style={styles.configSubtitle}>
-//         {standardColors.length} fibers with standard colors
-//       </Text>
-      
-//       {colors.map((colorObj, index) => (
-//         <View key={index} style={styles.colorItem}>
-//           <View style={[styles.colorIndicator, 
-//             {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
-//           />
-//           <Text style={styles.colorLabel}>{colorObj.color}:</Text>
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.description}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].description = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Description"
-//           />
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.connectedTo}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].connectedTo = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Connected to"
-//           />
-//         </View>
-//       ))}
-      
-//       <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-//         <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-// const FiberConfig = ({ fiber, onSave }) => {
-//   // Obtener colores estándar según el tipo de fibra
-//   const standardColors = getStandardFiberColors(fiber.type);
-  
-//   const [colors, setColors] = useState(
-//     fiber.colors && fiber.colors.length > 0 
-//       ? fiber.colors 
-//       : standardColors.map((color, index) => ({
-//           color: color,
-//           description: '',
-//           connectedTo: ''
-//         }))
-//   );
-
-//   const saveConfiguration = () => {
-//     onSave({
-//       ...fiber,
-//       colors: colors
-//     });
-//   };
-
-//   return (
-//     <View>
-//       <Text style={styles.configSectionTitle}>{fiber.type} Fiber</Text>
-//       <Text style={styles.configSubtitle}>
-//         {standardColors.length} fibers with standard colors
-//       </Text>
-      
-//       {colors.map((colorObj, index) => (
-//         <View key={index} style={styles.colorItemWithIndicator}>
-//           <View style={[styles.colorIndicator, 
-//             {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
-//           />
-//           <Text style={styles.colorLabel}>{colorObj.color}:</Text>
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.description}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].description = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Description"
-//           />
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.connectedTo}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].connectedTo = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Connected to"
-//           />
-//         </View>
-//       ))}
-      
-//       <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-//         <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-// const FiberConfig = ({ fiber, onSave }) => {
-//   // Obtener colores estándar según el tipo de fibra
-//   const standardColors = getStandardFiberColors(fiber.type);
-
-//   console.log('FiberConfig - fiber:', fiber); // ← Agrega este log
-//   console.log('FiberConfig - fiber.colors:', fiber.colors); // ← Y este
-//   console.log('FiberConfig - standard colors:', standardColors);
-  
-//   console.log('FiberConfig - fiber type:', fiber.type);
-//   console.log('FiberConfig - standard colors:', standardColors);
-  
-//   const [colors, setColors] = useState(
-//     fiber.colors && fiber.colors.length > 0 
-//       ? fiber.colors 
-//       : standardColors.map((color, index) => ({
-//           color: color,
-//           description: '',
-//           connectedTo: ''
-//         }))
-//   );
-
-//   const saveConfiguration = () => {
-//     onSave({
-//       ...fiber,
-//       colors: colors
-//     });
-//   };
-
-//   return (
-//     <View>
-//       <Text style={styles.configSectionTitle}>{fiber.type} Fiber</Text>
-//       <Text style={styles.configSubtitle}>
-//         {standardColors.length} fibers with standard colors
-//       </Text>
-      
-//       {colors.map((colorObj, index) => (
-//         <View key={index} style={styles.colorItemWithIndicator}>
-//           <View style={[styles.colorIndicator, 
-//             {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
-//           />
-//           <Text style={styles.colorLabel}>{colorObj.color}:</Text>
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.description}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].description = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Description"
-//           />
-//           <TextInput
-//             style={styles.colorInput}
-//             value={colorObj.connectedTo}
-//             onChangeText={(text) => {
-//               const newColors = [...colors];
-//               newColors[index].connectedTo = text;
-//               setColors(newColors);
-//             }}
-//             placeholder="Connected to"
-//           />
-//         </View>
-//       ))}
-      
-//       <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-//         <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-const FiberConfig = ({ fiber, onSave }) => {
-  // Obtener colores estándar según el tipo de fibra
-  const standardColors = getStandardFiberColors(fiber.type);
-
-  console.log('FiberConfig - fiber:', fiber);
-  console.log('FiberConfig - fiber.colors:', fiber.colors);
-  console.log('FiberConfig - standard colors:', standardColors);
-  
-  // Siempre mostrar TODOS los colores de la fibra, independientemente de la cantidad
-  const [colors, setColors] = useState(() => {
-    const existingColors = fiber.colors || [];
+  // Función para obtener código hexadecimal de color basado en nombre
+  const getColorHexCode = (colorName) => {
+    if (!colorName) return '#CCCCCC';
     
-    // Si ya tenemos colores configurados, usarlos
-    if (existingColors.length > 0) {
-      return existingColors;
-    }
+    // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
+    const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
     
-    // Si no, crear array con todos los colores estándar
-    return standardColors.map((color, index) => ({
-      color: color,
-      description: '',
-      connectedTo: ''
-    }));
-  });
-
-  const saveConfiguration = () => {
-    onSave({
-      ...fiber,
-      colors: colors // Guardar todos los colores
-    });
+    const colorMap = {
+      'blue': '#0000FF',
+      'orange': '#FFA500',
+      'green': '#008000',
+      'brown': '#A52A2A',
+      'slate': '#708090',
+      'gray': '#808080',
+      'white': '#FFFFFF',
+      'red': '#FF0000',
+      'black': '#000000',
+      'yellow': '#FFFF00',
+      'violet': '#EE82EE',
+      'rose': '#FF007F',
+      'pink': '#FF007F',
+      'aqua': '#00FFFF'
+    };
+    
+    const hexColor = colorMap[cleanColorName] || '#CCCCCC';
+    return hexColor;
   };
 
-  return (
-    <View>
-      <Text style={styles.configSectionTitle}>{fiber.type} Fiber</Text>
-      <Text style={styles.configSubtitle}>
-        {standardColors.length} fibers with standard colors
-      </Text>
-      <Text style={styles.configInfo}>
-        Quantity: {fiber.quantity} unit(s) - Configure all {standardColors.length} fibers
-      </Text>
+  const FiberConfig = ({ fiber, onSave }) => {
+    // Obtener colores estándar según el tipo de fibra
+    const standardColors = getStandardFiberColors(fiber.type);
+
+    // // // console.log(t('fiberConfig'), fiber);
+    // // // console.log(t('fiberColors'), fiber.colors);
+    // // // console.log(t('standardColors'), standardColors);
+    
+    // Siempre mostrar TODOS los colores de la fibra, independientemente de la cantidad
+    const [colors, setColors] = useState(() => {
+      const existingColors = fiber.colors || [];
       
-      {colors.map((colorObj, index) => (
-        <View key={index} style={styles.colorItemWithIndicator}>
-          <View style={[styles.colorIndicator, 
-            {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
-          />
-          <Text style={styles.colorLabel}>{colorObj.color}:</Text>
-          <TextInput
-            style={styles.colorInput}
-            value={colorObj.description}
-            onChangeText={(text) => {
-              const newColors = [...colors];
-              newColors[index].description = text;
-              setColors(newColors);
-            }}
-            placeholder="Description"
-          />
-          <TextInput
-            style={styles.colorInput}
-            value={colorObj.connectedTo}
-            onChangeText={(text) => {
-              const newColors = [...colors];
-              newColors[index].connectedTo = text;
-              setColors(newColors);
-            }}
-            placeholder="Connected to"
-          />
-        </View>
-      ))}
+      // Si ya tenemos colores configurados, usarlos
+      if (existingColors.length > 0) {
+        return existingColors;
+      }
       
-      <TouchableOpacity style={styles.saveConfigButton} onPress={saveConfiguration}>
-        <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
-      </TouchableOpacity>
-    </View>
-  );
+      // Si no, crear array con todos los colores estándar
+      return standardColors.map((color, index) => ({
+        color: color,
+        description: '',
+        connectedTo: ''
+      }));
+    });
+
+    const saveConfiguration = () => {
+      onSave({
+        ...fiber,
+        colors: colors // Guardar todos los colores
+      });
+    };
+
+    return (
+      <View>
+        <Text style={styles.configSectionTitle}>{fiber.type} {t('fiber')}</Text>
+        <Text style={styles.configSubtitle}>
+          {standardColors.length} {t('fibersWithStandardColors')}
+        </Text>
+        <Text style={styles.configInfo}>
+          {t('quantity')}: {fiber.quantity} {t('unit')}(s) - {t('configureAll')} {standardColors.length} {t('fibers')}
+        </Text>
+        
+        {colors.map((colorObj, index) => (
+          <View key={index} style={styles.colorItemWithIndicator}>
+            <View style={[styles.colorIndicator, 
+              {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
+            />
+            <Text style={styles.colorLabel}>{colorObj.color}:</Text>
+            <TextInput
+              style={styles.colorInput}
+              value={colorObj.description}
+              onChangeText={(text) => {
+                const newColors = [...colors];
+                newColors[index].description = text;
+                setColors(newColors);
+              }}
+              placeholder={t('description')}
+            />
+            <TextInput
+              style={styles.colorInput}
+              value={colorObj.connectedTo}
+              onChangeText={(text) => {
+                const newColors = [...colors];
+                newColors[index].connectedTo = text;
+                setColors(newColors);
+              }}
+              placeholder={t('connectedTo')}
+            />
+          </View>
+        ))}
+        
+        <TouchableOpacity style={[styles.saveConfigButton, {backgroundColor: theme.success}]} onPress={saveConfiguration}>
+          <Text style={styles.saveConfigButtonText}>{t('saveConfiguration')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const handleExistingNodeLink = (node) => {
+  if (linkingMode && linkSource) {
+    createLink(linkSource, node);
+  }
 };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.background}, { paddingTop: device.topInset }]}>
+
+      <NotificationContainer />
       <MapView
         style={styles.map}
         region={region}
@@ -1846,21 +1883,22 @@ const FiberConfig = ({ fiber, onSave }) => {
         {renderConnections()}
       </MapView>
 
-       {/* Mensaje de depuración (puedes eliminarlo después) */}
-    <View style={styles.debugInfo}>
-      <Text style={styles.debugText}>
-        Nodes: {nodes.length} | Connections: {getConnections().length}
-      </Text>
-    </View>
+      {/* Mensaje de depuración (puedes eliminarlo después) */}
+      <View style={styles.debugInfo}>
+        <Text style={styles.debugText}>
+          {t('nodes')}: {nodes.length} | {t('connections')}: {getConnections().length}
+        </Text>
+      </View>
 
       {/* Controles de tipo de nodo */}
-      <View style={styles.nodeTypeControls}>
-        <Text style={styles.sectionTitle}>Add Node</Text>
+      <View style={[styles.nodeTypeControls, {backgroundColor: theme.white}]}>
+        <Text style={[styles.sectionTitle, {color: theme.text}]}>{t('addNode')}</Text>
         <View style={styles.nodeTypeButtons}>
           <TouchableOpacity
             style={[
               styles.nodeTypeButton,
-              selectedNodeType === 'MDF' && styles.nodeTypeButtonSelected
+              {backgroundColor: theme.primary},
+              selectedNodeType === 'MDF' && [styles.nodeTypeButtonSelected, {backgroundColor: theme.accent}]
             ]}
             onPress={() => selectNodeType('MDF')}
           >
@@ -1871,324 +1909,399 @@ const FiberConfig = ({ fiber, onSave }) => {
           <TouchableOpacity
             style={[
               styles.nodeTypeButton,
-              selectedNodeType === 'pedestal' && styles.nodeTypeButtonSelected
+              {backgroundColor: theme.primary},
+              selectedNodeType === 'pedestal' && [styles.nodeTypeButtonSelected, {backgroundColor: theme.accent}]
             ]}
             onPress={() => selectNodeType('pedestal')}
           >
             <Ionicons name="cube" size={24} color="#ffffff" />
-            <Text style={styles.nodeTypeButtonText}>Pedestal</Text>
+            <Text style={styles.nodeTypeButtonText}>{t('pedestal')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[
               styles.nodeTypeButton,
-              selectedNodeType === 'IDF' && styles.nodeTypeButtonSelected
+              {backgroundColor: theme.primary},
+              selectedNodeType === 'IDF' && [styles.nodeTypeButtonSelected, {backgroundColor: theme.accent}]
             ]}
             onPress={() => selectNodeType('IDF')}
           >
             <Ionicons name="hardware-chip" size={24} color="#ffffff" />
             <Text style={styles.nodeTypeButtonText}>IDF</Text>
-          </TouchableOpacity>
-
-          
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[
               styles.nodeTypeButton,
-              selectedNodeType === 'unit' && styles.nodeTypeButtonSelected
+              {backgroundColor: theme.primary},
+              selectedNodeType === 'unit' && [styles.nodeTypeButtonSelected, {backgroundColor: theme.accent}]
             ]}
             onPress={() => selectNodeType('unit')}
           >
             <Ionicons name="home" size={24} color="#ffffff" />
-            <Text style={styles.nodeTypeButtonText}>Unit</Text>
+            <Text style={styles.nodeTypeButtonText}>{t('unit')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Botón de guardar */}
-      <TouchableOpacity style={styles.saveButton} onPress={saveNetworkMap}>
+      <TouchableOpacity style={[styles.saveButton, {backgroundColor: theme.success}]} onPress={saveNetworkMap}>
         <Ionicons name="save" size={24} color="#ffffff" />
-        <Text style={styles.saveButtonText}>Save Network</Text>
+        <Text style={styles.saveButtonText}>{t('saveNetwork')}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.clearButton} onPress={clearAllNodes}>
-  <Ionicons name="trash" size={24} color="#ffffff" />
-  <Text style={styles.clearButtonText}>Clear all</Text>
+      
+      <TouchableOpacity style={[styles.clearButton, {backgroundColor: theme.danger}]} onPress={clearAllNodes}>
+        <Ionicons name="trash" size={24} color="#ffffff" />
+        <Text style={styles.clearButtonText}>{t('clearAll')}</Text>
+      </TouchableOpacity>
+
+      {/* Botón de regresar */}
+<TouchableOpacity 
+  style={[styles.backButton, {backgroundColor: theme.warning}]} 
+  onPress={() => navigation.goBack()}
+>
+  <Ionicons name="arrow-back" size={24} color="#ffffff" />
+  <Text style={styles.backButtonText}>{t('back')}</Text>
 </TouchableOpacity>
 
       {/* Modal de detalles del nodo */}
+      <Modal
+        visible={showNodeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNodeModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, {backgroundColor: theme.white}]}>
+            <View style={[styles.modalHeader, {borderBottomColor: theme.border}]}>
+              <Text style={[styles.modalTitle, {color: theme.text}]}>
+                {selectedNode?.id ? t('editNode') : t('addNode')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowNodeModal(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, {color: theme.text}]}>{t('nodeName')}</Text>
+                <TextInput
+                  style={[styles.input, {borderColor: theme.border, color: theme.text}]}
+                  value={nodeForm.name}
+                  onChangeText={(text) => setNodeForm({ ...nodeForm, name: text })}
+                  placeholder={t('enterNodeName')}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, {color: theme.text}]}>{t('owner')}</Text>
+                <TextInput
+                  style={[styles.input, {borderColor: theme.border, color: theme.text}]}
+                  value={nodeForm.owner}
+                  onChangeText={(text) => setNodeForm({ ...nodeForm, owner: text })}
+                  placeholder={t('enterOwnerName')}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, {color: theme.text}]}>{t('address')}</Text>
+                {loadingAddress ? (
+                  <ActivityIndicator size="small" color={theme.primary} />
+                ) : (
+                  <TextInput
+                    style={[styles.input, styles.addressInput, {borderColor: theme.border, color: theme.text}]}
+                    value={nodeForm.address}
+                    onChangeText={(text) => setNodeForm({ ...nodeForm, address: text })}
+                    placeholder={t('addressFromCoordinates')}
+                    multiline
+                  />
+                )}
+              </View>
+
+              {/* Selector de dispositivos - Solo mostrar para MDF y unit */}
+              {(selectedNode?.type === 'MDF' || selectedNode?.type === 'unit') && (
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, {color: theme.text}]}>{t('devices')}</Text>
+                  {devices.length > 0 ? (
+                    devices.map((device, index) => {
+                      const availableCount = getAvailableCount(device);
+                      const assignedInThisNode = getAssignedInThisNode(device);
+                      const currentQuantity = nodeForm.selectedDevices?.find(d => 
+                        d.type === device.type && d.ports === device.ports
+                      )?.quantity || 0;
+                      
+                      return (
+                        <View key={`device-${index}`} style={[styles.deviceItem, {borderColor: theme.border}]}>
+                          <View style={styles.deviceInfo}>
+                            <Text style={[styles.deviceName, {color: theme.text}]}>{device.type} ({device.ports} {t('ports')})</Text>
+                            <Text style={[styles.deviceCount, {color: theme.lightText}]}>
+                              {t('available')}: {availableCount + assignedInThisNode}
+                            </Text>
+                          </View>
+                          
+                          <View style={styles.quantitySelector}>
+                            <TouchableOpacity
+                              style={[styles.quantityButton, {backgroundColor: theme.primary}]}
+                              onPress={() => updateDeviceQuantity(device, currentQuantity - 1)}
+                              disabled={currentQuantity <= 0}
+                            >
+                              <Ionicons name="remove" size={16} color="#ffffff" />
+                            </TouchableOpacity>
+                            
+                            <Text style={[styles.quantityText, {color: theme.text}]}>{currentQuantity}</Text>
+                            
+                            <TouchableOpacity
+                              style={[
+                                styles.quantityButton,
+                                {backgroundColor: theme.primary},
+                                currentQuantity >= (availableCount + assignedInThisNode) && [styles.quantityButtonDisabled, {backgroundColor: theme.border}]
+                              ]}
+                              onPress={() => updateDeviceQuantity(device, currentQuantity + 1)}
+                              disabled={currentQuantity >= (availableCount + assignedInThisNode)}
+                            >
+                              <Ionicons name="add" size={16} color="#ffffff" />
+                            </TouchableOpacity>
+                          </View>
+                          
+                          {currentQuantity > 0 && (
+                            <TouchableOpacity
+                              style={styles.configureButton}
+                              onPress={() => openConfigModal(
+                                nodeForm.selectedDevices.find(d => 
+                                  d.type === device.type && d.ports === device.ports
+                                ), 
+                                'device'
+                              )}
+                            >
+                              <Ionicons name="settings" size={20} color={theme.primary} />
+                              <Text style={[styles.configureButtonText, {color: theme.primary}]}>{t('configure')}</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <Text style={[styles.noItemsText, {color: theme.lightText}]}>{t('noDevicesConfigured')}</Text>
+                  )}
+                </View>
+              )}
+
+              {/* Selector de fibra - Solo mostrar para MDF y unit */}
+              {(selectedNode?.type === 'MDF' || selectedNode?.type === 'unit') && (
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, {color: theme.text}]}>{t('fiberTypes')}</Text>
+                  {fibers.length > 0 ? (
+                    fibers.map((fiber, index) => {
+                      const availableCount = getAvailableFiberCount(fiber);
+                      const assignedInThisNode = getAssignedFiberInThisNode(fiber);
+                      const currentQuantity = nodeForm.selectedFibers?.find(f => f.type === fiber.type)?.quantity || 0;
+                      
+                      return (
+                        <View key={`fiber-${index}`} style={[styles.fiberItem, {borderColor: theme.border}]}>
+                          <View style={styles.fiberInfo}>
+                            <Text style={[styles.fiberName, {color: theme.text}]}>{fiber.type}</Text>
+                            <Text style={[styles.fiberCount, {color: theme.lightText}]}>
+                              {t('available')}: {availableCount + assignedInThisNode}
+                            </Text>
+                          </View>
+                          
+                          <View style={styles.quantitySelector}>
+                            <TouchableOpacity
+                              style={[styles.quantityButton, {backgroundColor: theme.primary}]}
+                              onPress={() => updateFiberQuantity(fiber, currentQuantity - 1)}
+                              disabled={currentQuantity <= 0}
+                            >
+                              <Ionicons name="remove" size={16} color="#ffffff" />
+                            </TouchableOpacity>
+                            
+                            <Text style={[styles.quantityText, {color: theme.text}]}>{currentQuantity}</Text>
+                            
+                            <TouchableOpacity
+                              style={[
+                                styles.quantityButton,
+                                {backgroundColor: theme.primary},
+                                currentQuantity >= (availableCount + assignedInThisNode) && [styles.quantityButtonDisabled, {backgroundColor: theme.border}]
+                              ]}
+                              onPress={() => updateFiberQuantity(fiber, currentQuantity + 1)}
+                              disabled={currentQuantity >= (availableCount + assignedInThisNode)}
+                            >
+                              <Ionicons name="add" size={16} color="#ffffff" />
+                            </TouchableOpacity>
+                          </View>
+                          
+                          {currentQuantity > 0 && (
+                            <TouchableOpacity
+                              style={styles.configureButton}
+                              onPress={() => openConfigModal(
+                                nodeForm.selectedFibers.find(f => f.type === fiber.type), 
+                                'fiber'
+                              )}
+                            >
+                              <Ionicons name="settings" size={20} color={theme.primary} />
+                              <Text style={[styles.configureButtonText, {color: theme.primary}]}>{t('configure')}</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <Text style={[styles.noItemsText, {color: theme.lightText}]}>{t('noFiberTypesConfigured')}</Text>
+                  )}
+                </View>
+              )}
+
+              {/* Mensaje informativo para pedestal e IDF */}
+              {(selectedNode?.type === 'pedestal' || selectedNode?.type === 'IDF') && (
+                <View style={[styles.infoBox, {backgroundColor: theme.secondary}]}>
+                  <Ionicons name="information-circle" size={20} color={theme.primary} />
+                  <Text style={[styles.infoText, {color: theme.text}]}>
+                    {t('noConfigNeededForNode', {nodeType: selectedNode?.type})}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={[styles.modalFooter, {borderTopColor: theme.border}]}>
+              {selectedNode?.id && (
+                <TouchableOpacity
+                  style={[styles.deleteButton, {backgroundColor: theme.danger}]}
+                  onPress={() => deleteNode(selectedNode.id)}
+                >
+                  <Ionicons name="trash" size={20} color="#ffffff" />
+                  <Text style={styles.deleteButtonText}>{t('delete')}</Text>
+                </TouchableOpacity>
+              )}
+              
+              <View style={styles.footerRightButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowNodeModal(false)}
+                >
+                  <Text style={[styles.cancelButtonText, {color: theme.lightText}]}>{t('cancel')}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.saveModalButton, {backgroundColor: theme.success}]}
+                  onPress={selectedNode?.id ? updateNode : addNode}
+                >
+                  <Text style={styles.saveModalButtonText}>
+                    {selectedNode?.id ? t('update') : t('addNode')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de configuración de dispositivos/fibras */}
+      <Modal
+        visible={showConfigModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowConfigModal(false)}
+      >
+        <View style={styles.configModalContainer}>
+          <View style={[styles.configModalContent, {backgroundColor: theme.white}]}>
+            <View style={[styles.configModalHeader, {borderBottomColor: theme.border}]}>
+              <Text style={[styles.configModalTitle, {color: theme.text}]}>
+                {t('configure')} {configType === 'device' ? t('device') : t('fiber')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowConfigModal(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.configModalBody}>
+              {configType === 'device' && currentConfig && (
+                <DeviceConfig 
+                  device={currentConfig} 
+                  onSave={saveConfig}
+                />
+              )}
+              
+              {configType === 'fiber' && currentConfig && (
+                <FiberConfig 
+                  fiber={currentConfig} 
+                  onSave={saveConfig}
+                />
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal ligero para nuevos enlaces*/}
 <Modal
-  visible={showNodeModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowNodeModal(false)}
+  visible={linkMenuVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setLinkMenuVisible(false)}
 >
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>
-          {selectedNode?.id ? 'Edit Node' : 'Add Node'}
-        </Text>
-        <TouchableOpacity onPress={() => setShowNodeModal(false)}>
-          <Ionicons name="close" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.modalBody}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Node Name</Text>
-          <TextInput
-            style={styles.input}
-            value={nodeForm.name}
-            onChangeText={(text) => setNodeForm({ ...nodeForm, name: text })}
-            placeholder="Enter node name"
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Owner</Text>
-          <TextInput
-            style={styles.input}
-            value={nodeForm.owner}
-            onChangeText={(text) => setNodeForm({ ...nodeForm, owner: text })}
-            placeholder="Enter owner name"
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Address</Text>
-          {loadingAddress ? (
-            <ActivityIndicator size="small" color="#3498db" />
-          ) : (
-            <TextInput
-              style={[styles.input, styles.addressInput]}
-              value={nodeForm.address}
-              onChangeText={(text) => setNodeForm({ ...nodeForm, address: text })}
-              placeholder="Address will be retrieved from coordinates"
-              multiline
-            />
-          )}
-        </View>
-
-        {/* Selector de dispositivos - Solo mostrar para MDF y unit */}
-{(selectedNode?.type === 'MDF' || selectedNode?.type === 'unit') && (
-  <View style={styles.formGroup}>
-    <Text style={styles.label}>Devices</Text>
-    {devices.length > 0 ? (
-      devices.map((device, index) => {
-        const availableCount = getAvailableCount(device);
-        const assignedInThisNode = getAssignedInThisNode(device);
-        {/* Selector de dispositivos */}
-        const currentQuantity = nodeForm.selectedDevices?.find(d => 
-          d.type === device.type && d.ports === device.ports
-        )?.quantity || 0;
-        
-        return (
-          <View key={`device-${index}`} style={styles.deviceItem}>
-            <View style={styles.deviceInfo}>
-              <Text style={styles.deviceName}>{device.type} ({device.ports} ports)</Text>
-              <Text style={styles.deviceCount}>
-                Available: {availableCount + assignedInThisNode}
-              </Text>
-            </View>
-            
-            <View style={styles.quantitySelector}>
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => updateDeviceQuantity(device, currentQuantity - 1)}
-                disabled={currentQuantity <= 0}
-              >
-                <Ionicons name="remove" size={16} color="#ffffff" />
-              </TouchableOpacity>
-              
-              <Text style={styles.quantityText}>{currentQuantity}</Text>
-              
-              <TouchableOpacity
-                style={[
-                  styles.quantityButton,
-                  currentQuantity >= (availableCount + assignedInThisNode) && styles.quantityButtonDisabled
-                ]}
-                onPress={() => updateDeviceQuantity(device, currentQuantity + 1)}
-                disabled={currentQuantity >= (availableCount + assignedInThisNode)}
-              >
-                <Ionicons name="add" size={16} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-            
-            {currentQuantity > 0 && (
-              <TouchableOpacity
-                style={styles.configureButton}
-                onPress={() => openConfigModal(
-                  nodeForm.selectedDevices.find(d => 
-                    d.type === device.type && d.ports === device.ports
-                  ), 
-                  'device'
-                )}
-              >
-                <Ionicons name="settings" size={20} color="#3498db" />
-                <Text style={styles.configureButtonText}>Configure</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        );
-      })
-    ) : (
-      <Text style={styles.noItemsText}>No devices configured for this project</Text>
-    )}
-  </View>
-)}
-
-        {/* Selector de fibra - Solo mostrar para MDF y unit */}
-{(selectedNode?.type === 'MDF' || selectedNode?.type === 'unit') && (
-  <View style={styles.formGroup}>
-    <Text style={styles.label}>Fiber Types</Text>
-    {fibers.length > 0 ? (
-      fibers.map((fiber, index) => {
-        const availableCount = getAvailableFiberCount(fiber);
-        const assignedInThisNode = getAssignedFiberInThisNode(fiber);
-        {/* Selector de fibras */}
-        const currentQuantity = nodeForm.selectedFibers?.find(f => f.type === fiber.type)?.quantity || 0;
-        
-        return (
-          <View key={`fiber-${index}`} style={styles.fiberItem}>
-            <View style={styles.fiberInfo}>
-              <Text style={styles.fiberName}>{fiber.type}</Text>
-              <Text style={styles.fiberCount}>
-                Available: {availableCount + assignedInThisNode}
-              </Text>
-            </View>
-            
-            <View style={styles.quantitySelector}>
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => updateFiberQuantity(fiber, currentQuantity - 1)}
-                disabled={currentQuantity <= 0}
-              >
-                <Ionicons name="remove" size={16} color="#ffffff" />
-              </TouchableOpacity>
-              
-              <Text style={styles.quantityText}>{currentQuantity}</Text>
-              
-              <TouchableOpacity
-                style={[
-                  styles.quantityButton,
-                  currentQuantity >= (availableCount + assignedInThisNode) && styles.quantityButtonDisabled
-                ]}
-                onPress={() => updateFiberQuantity(fiber, currentQuantity + 1)}
-                disabled={currentQuantity >= (availableCount + assignedInThisNode)}
-              >
-                <Ionicons name="add" size={16} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-            
-            {currentQuantity > 0 && (
-              <TouchableOpacity
-                style={styles.configureButton}
-                onPress={() => openConfigModal(
-                  nodeForm.selectedFibers.find(f => f.type === fiber.type), 
-                  'fiber'
-                )}
-              >
-                <Ionicons name="settings" size={20} color="#3498db" />
-                <Text style={styles.configureButtonText}>Configure</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        );
-      })
-    ) : (
-      <Text style={styles.noItemsText}>No fiber types configured for this project</Text>
-    )}
-  </View>
-)}
-
-        {/* Mensaje informativo para pedestal e IDF */}
-        {(selectedNode?.type === 'pedestal' || selectedNode?.type === 'IDF') && (
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#3498db" />
-            <Text style={styles.infoText}>
-              No devices or fiber configuration needed for {selectedNode?.type} nodes.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.modalFooter}>
-        {selectedNode?.id && (
-    <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={() => deleteNode(selectedNode.id)}
-    >
-      <Ionicons name="trash" size={20} color="#ffffff" />
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
-  )}
-  
-  <View style={styles.footerRightButtons}>
-    <TouchableOpacity
-      style={styles.cancelButton}
-      onPress={() => setShowNodeModal(false)}
-    >
-      <Text style={styles.cancelButtonText}>Cancel</Text>
-    </TouchableOpacity>
-    
-    <TouchableOpacity
-      style={styles.saveModalButton}
-      onPress={selectedNode?.id ? updateNode : addNode}
-    >
-      <Text style={styles.saveModalButtonText}>
-        {selectedNode?.id ? 'Update' : 'Add'} Node
+  <View style={styles.linkMenuOverlay}>
+    <View style={styles.linkMenu}>
+      <Text style={styles.linkMenuTitle}>Opciones de enlace</Text>
+      <Text style={styles.linkMenuSubtitle}>
+        Nodo seleccionado: {selectedNodeForMenu?.name}
       </Text>
-    </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-  </View>
-</Modal>
+      
+      <TouchableOpacity
+        style={styles.linkMenuButton}
+        onPress={() => {
+          setLinkSource(selectedNodeForMenu);
+          setLinkingMode(true);
+          setLinkMenuVisible(false);
+          Alert.alert('Modo enlace activado', 
+            'Los nuevos nodos que crees se conectarán automáticamente a este nodo. Selecciona un tipo de nodo para comenzar.');
+        }}
+      >
+        <Ionicons name="link" size={20} color="#fff" />
+        <Text style={styles.linkMenuButtonText}>Enlazar nuevos nodos desde aquí</Text>
+      </TouchableOpacity>
 
-{/* Modal de configuración de dispositivos/fibras */}
-<Modal
-  visible={showConfigModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowConfigModal(false)}
->
-  <View style={styles.configModalContainer}>
-    <View style={styles.configModalContent}>
-      <View style={styles.configModalHeader}>
-        <Text style={styles.configModalTitle}>
-          Configure {configType === 'device' ? 'Device' : 'Fiber'}
-        </Text>
-        <TouchableOpacity onPress={() => setShowConfigModal(false)}>
-          <Ionicons name="close" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.linkMenuButton, {backgroundColor: '#3498db'}]}
+        onPress={() => {
+          setLinkSource(selectedNodeForMenu);
+          setLinkingMode(true);
+          setLinkMenuVisible(false);
+          Alert.alert('Modo enlace activado', 
+            'Toca otro nodo existente para crear una conexión.');
+        }}
+      >
+        <Ionicons name="navigate" size={20} color="#fff" />
+        <Text style={styles.linkMenuButtonText}>Enlazar con nodo existente</Text>
+      </TouchableOpacity>
 
-      <ScrollView style={styles.configModalBody}>
-        {configType === 'device' && currentConfig && (
-          <DeviceConfig 
-            device={currentConfig} 
-            onSave={saveConfig}
-          />
-        )}
-        
-        {configType === 'fiber' && currentConfig && (
-          <FiberConfig 
-            fiber={currentConfig} 
-            onSave={saveConfig}
-          />
-        )}
-      </ScrollView>
+      <TouchableOpacity
+        style={[styles.linkMenuButton, styles.cancelButton]}
+        onPress={() => setLinkMenuVisible(false)}
+      >
+        <Text style={styles.linkMenuButtonText}>Cancelar</Text>
+      </TouchableOpacity>
     </View>
   </View>
 </Modal>
+{linkingMode && (
+  <TouchableOpacity
+    style={styles.exitLinkingButton}
+    onPress={() => {
+      setLinkingMode(false);
+      setLinkSource(null);
+    }}
+  >
+    <Ionicons name="close-circle" size={24} color="#fff" />
+    <Text style={styles.exitLinkingText}>Dejar de enlazar</Text>
+  </TouchableOpacity>
+)}
     </View>
+
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   map: {
     width: '100%',
@@ -2199,7 +2312,6 @@ const styles = StyleSheet.create({
     top: 20,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 10,
     padding: 15,
     shadowColor: 'black',
@@ -2212,7 +2324,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#333',
   },
   nodeTypeButtons: {
     flexDirection: 'row',
@@ -2221,14 +2332,13 @@ const styles = StyleSheet.create({
   nodeTypeButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3498db',
     borderRadius: 8,
     padding: 10,
     width: 70,
     height: 70,
   },
   nodeTypeButtonSelected: {
-    backgroundColor: '#2c3e50',
+    // El color se aplica dinámicamente
   },
   nodeTypeButtonText: {
     color: '#ffffff',
@@ -2241,7 +2351,6 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#27ae60',
     borderRadius: 8,
     padding: 15,
     shadowColor: 'black',
@@ -2266,11 +2375,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  markerLabel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
   markerText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 2,
+  },
+  markerType: {
+    fontSize: 8,
+    color: '#666',
   },
   modalContainer: {
     flex: 1,
@@ -2281,7 +2399,6 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '90%',
     maxHeight: '80%',
-    backgroundColor: '#ffffff',
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -2291,12 +2408,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
   modalBody: {
     padding: 15,
@@ -2309,11 +2424,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     padding: 10,
     fontSize: 16,
@@ -2328,7 +2441,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     marginBottom: 5,
   },
@@ -2338,11 +2450,9 @@ const styles = StyleSheet.create({
   deviceName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   deviceCount: {
     fontSize: 12,
-    color: '#666',
   },
   quantitySelector: {
     flexDirection: 'row',
@@ -2352,12 +2462,11 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
   },
   quantityButtonDisabled: {
-    backgroundColor: '#ccc',
+    // El color se aplica dinámicamente
   },
   quantityText: {
     marginHorizontal: 10,
@@ -2366,39 +2475,71 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: 'center',
   },
-  fiberOptions: {
+  fiberItem: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  fiberOption: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
-    marginRight: 10,
-    marginBottom: 10,
+    marginBottom: 5,
   },
-  fiberOptionSelected: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
+  fiberInfo: {
+    flex: 1,
   },
-  fiberOptionText: {
-    color: '#333',
+  fiberName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  fiberCount: {
+    fontSize: 12,
   },
   noItemsText: {
     fontStyle: 'italic',
-    color: '#666',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  infoText: {
+    marginLeft: 10,
+    fontSize: 14,
+    flex: 1,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderTopWidth: 1,
+  },
+  footerRightButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 5,
+    padding: 10,
+  },
+  deleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 5,
   },
   cancelButton: {
     padding: 10,
     marginRight: 10,
   },
   cancelButtonText: {
-    color: '#666',
     fontSize: 16,
   },
   saveModalButton: {
-    backgroundColor: '#27ae60',
     borderRadius: 5,
     padding: 10,
   },
@@ -2407,212 +2548,98 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  modalFooter: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: 15,
-  borderTopWidth: 1,
-  borderTopColor: '#eee',
-},
-footerRightButtons: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
-deleteButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#e74c3c',
-  borderRadius: 5,
-  padding: 10,
-},
-deleteButtonText: {
-  color: '#ffffff',
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginLeft: 5,
-},
-cancelButton: {
-  padding: 10,
-  marginRight: 10,
-},
-cancelButtonText: {
-  color: '#666',
-  fontSize: 16,
-},
-saveModalButton: {
-  backgroundColor: '#27ae60',
-  borderRadius: 5,
-  padding: 10,
-},
-saveModalButtonText: {
-  color: '#ffffff',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
   debugInfo: {
-  position: 'absolute',
-  top: 100,
-  left: 20,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  padding: 5,
-  borderRadius: 5,
-},
-debugText: {
-  color: '#ffffff',
-  fontSize: 12,
-},
-clearButton: {
-  position: 'absolute',
-  bottom: 20,
-  left: 20,
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#c54034',
-  borderRadius: 8,
-  padding: 15,
-  shadowColor: 'black',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
-  elevation: 5,
-},
-clearButtonText: {
-  color: '#ffffff',
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginLeft: 5,
-},
-// Agregar estos estilos al objeto de estilos
-configModalContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-},
-configModalContent: {
-  width: '90%',
-  maxHeight: '80%',
-  backgroundColor: '#ffffff',
-  borderRadius: 10,
-  overflow: 'hidden',
-},
-configModalHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: 15,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
-configModalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: '#333',
-},
-configModalBody: {
-  padding: 15,
-},
-configSectionTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginBottom: 15,
-  color: '#333',
-},
-portItem: {
-  marginBottom: 10,
-  padding: 10,
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 5,
-},
-portLabel: {
-  fontWeight: 'bold',
-  marginBottom: 5,
-},
-portInput: {
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 5,
-  padding: 8,
-  marginBottom: 5,
-},
-colorItem: {
-  marginBottom: 10,
-  padding: 10,
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 5,
-},
-colorLabel: {
-  fontWeight: 'bold',
-  marginBottom: 5,
-},
-colorInput: {
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 5,
-  padding: 8,
-  marginBottom: 5,
-},
-saveConfigButton: {
-  backgroundColor: '#27ae60',
-  borderRadius: 5,
-  padding: 15,
-  alignItems: 'center',
-  marginTop: 10,
-},
-saveConfigButtonText: {
-  color: '#ffffff',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
-configureButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginLeft: 10,
-},
-configureButtonText: {
-  color: '#3498db',
-  marginLeft: 5,
-  fontSize: 12,
-},
-fiberItem: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: 10,
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 5,
-  marginBottom: 5,
-},
-fiberInfo: {
-  flex: 1,
-},
-fiberName: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#333',
-},
-fiberCount: {
-  fontSize: 12,
-  color: '#666',
-},
-configSubtitle: {
-  fontSize: 14,
-  color: '#666',
-  marginBottom: 15,
-},
-colorIndicator: {
-  width: 20,
-  height: 20,
-  borderRadius: 10,
-  marginRight: 10,
-  borderWidth: 1,
-  borderColor: '#ddd',
-},
-colorItemWithIndicator: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 5,
+    borderRadius: 5,
+  },
+  debugText: {
+    color: '#ffffff',
+    fontSize: 12,
+  },
+  clearButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 15,
+    shadowColor: 'black',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  clearButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  // Estilos para modales de configuración
+  configModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  configModalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  configModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+  },
+  configModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  configModalBody: {
+    padding: 15,
+  },
+  configSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  configSubtitle: {
+    fontSize: 14,
+    marginBottom: 15,
+  },
+  configInfo: {
+    fontSize: 12,
+    marginBottom: 15,
+    fontStyle: 'italic',
+  },
+  portItem: {
+    marginBottom: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+  },
+  portLabel: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  portInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 5,
+  },
+  colorItemWithIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
@@ -2642,10 +2669,171 @@ colorItemWithIndicator: {
     padding: 8,
     marginLeft: 5,
   },
-  configSubtitle: {
+  saveConfigButton: {
+    borderRadius: 5,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  saveConfigButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  configureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  configureButtonText: {
+    marginLeft: 5,
+    fontSize: 12,
+  },
+  linkMenuOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center'
+},
+linkMenu: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 20,
+  width: '75%'
+},
+linkMenuTitle: {
+  fontSize: 16,
+  marginBottom: 15,
+  textAlign: 'center'
+},
+linkMenuButton: {
+  backgroundColor: '#3498db',
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 10
+},
+exitLinkingButton: {
+  position: 'absolute',
+  bottom: 100,
+  alignSelf: 'center',
+  flexDirection: 'row',
+  backgroundColor: 'rgba(231,76,60,0.9)',
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 24,
+  alignItems: 'center'
+},
+exitLinkingText: {
+  color: '#fff',
+  marginLeft: 6,
+  fontWeight: '600'
+},
+linkMenuOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center'
+},
+linkMenu: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 20,
+  width: '75%'
+},
+linkMenuTitle: {
+  fontSize: 16,
+  marginBottom: 15,
+  textAlign: 'center'
+},
+linkMenuButton: {
+  backgroundColor: '#3498db',
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 10
+},
+linkMenuButtonText: {
+  color: '#fff',
+  textAlign: 'center'
+},
+// cancelButton: {
+//   backgroundColor: '#e74c3c'
+// },
+exitLinkingButton: {
+  position: 'absolute',
+  bottom: 100,
+  alignSelf: 'center',
+  flexDirection: 'row',
+  backgroundColor: 'rgba(231,76,60,0.9)',
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 24,
+  alignItems: 'center'
+},
+exitLinkingText: {
+  color: '#fff',
+  marginLeft: 6,
+  fontWeight: '600'
+},
+linkMenuSubtitle: {
+  fontSize: 14,
+  marginBottom: 15,
+  textAlign: 'center',
+  color: '#666'
+},
+backButton: {
+  position: 'absolute',
+  bottom: 90, // Ajustar posición para que no se superponga con otros botones
+  right: 20,
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderRadius: 8,
+  padding: 15,
+  shadowColor: 'black',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+},
+backButtonText: {
+  color: '#ffffff',
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginLeft: 5,
+},
+notificationContainer: {
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    alignItems: 'center',
+  },
+  notification: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    minWidth: '90%',
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  notificationText: {
+    color: '#fff',
     fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
+    flex: 1,
+    marginRight: 10,
+  },
+  notificationClose: {
+    padding: 5,
   },
 });
 

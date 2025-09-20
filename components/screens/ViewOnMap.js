@@ -16,8 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { NetworkMapService } from '../../service/storage';
+import { useApp } from '../../components/context/AppContext';
+import { useTranslation } from '../hooks/useTranslation';
 
-const ViewOnMap = ({ navigation, route }) => {
+const ViewOnMap = ({ navigation, route, device, theme }) => {
   const mapRef = useRef(null);
   const [region, setRegion] = useState({
     latitude: 29.6516,
@@ -35,6 +37,18 @@ const ViewOnMap = ({ navigation, route }) => {
   const [showMapList, setShowMapList] = useState(true);
   const [filteredMaps, setFilteredMaps] = useState([]);
   const [isMapReady, setIsMapReady] = useState(false);
+
+  const { t } = useTranslation();
+const { isDarkMode } = useApp();
+
+const colors = {
+  background : isDarkMode ? '#121212' : '#ffffff',
+  card       : isDarkMode ? '#1e1e1e' : '#ffffff',
+  text       : isDarkMode ? '#ffffff' : '#2c3e50',
+  subText    : isDarkMode ? '#b0b0b0' : '#7f8c8d',
+  border     : isDarkMode ? '#333'    : '#ecf0f1',
+  input      : isDarkMode ? '#2a2a2a' : '#ffffff',
+};
 
   // Cargar mapas guardados
   useEffect(() => {
@@ -58,6 +72,28 @@ const ViewOnMap = ({ navigation, route }) => {
   setIsMapReady(true);
 };
 
+const validateCoordinates = (lat, lng) => {
+  if (lat === null || lng === null || lat === undefined || lng === undefined) {
+    return null;
+  }
+
+  const latitude = typeof lat === 'string' ? parseFloat(lat) : lat;
+  const longitude = typeof lng === 'string' ? parseFloat(lng) : lng;
+
+  if (isNaN(latitude) || isNaN(longitude)) {
+    console.warn('Coordenadas inválidas:', lat, lng);
+    return null;
+  }
+
+  // Validar rango de coordenadas
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    console.warn('Coordenadas fuera de rango:', latitude, longitude);
+    return null;
+  }
+
+  return { latitude, longitude };
+};
+
   const loadSavedMaps = async () => {
     try {
       setLoading(true);
@@ -66,7 +102,7 @@ const ViewOnMap = ({ navigation, route }) => {
       setFilteredMaps(maps);
     } catch (error) {
       console.error('Error loading saved maps:', error);
-      Alert.alert('Error', 'Could not load saved maps');
+      Alert.alert(t('error'), t('couldNotLoadMaps'));
     } finally {
       setLoading(false);
     }
@@ -113,30 +149,72 @@ const ViewOnMap = ({ navigation, route }) => {
   //     });
   //   }
   // };
+  // const selectMap = (map) => {
+  //  setSelectedMap(map);
+  //  setShowMapList(false);
+  
+  //  // Centrar el mapa alrededor de todos los nodos
+  //  if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
+  //   // Calcular el bounding box que contenga todos los nodos
+  //   const coordinates = map.nodes.map(node => ({
+  //     latitude: node.latitude,
+  //     longitude: node.longitude
+  //   }));
+    
+  //   // Calcular los límites del área
+  //   const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
+    
+  //   // Calcular el centro del área
+  //   const centerLat = (minLat + maxLat) / 2;
+  //   const centerLng = (minLng + maxLng) / 2;
+    
+  //   // Calcular el delta apropiado para mostrar todos los puntos
+  //   const latDelta = (maxLat - minLat) * 1.2; // 20% de margen
+  //   const lngDelta = (maxLng - minLng) * 1.2; // 20% de margen
+    
+  //   // Asegurar un delta mínimo para que el zoom no sea demasiado cercano
+  //   const minDelta = 0.01;
+    
+  //   setRegion({
+  //     latitude: centerLat,
+  //     longitude: centerLng,
+  //     latitudeDelta: Math.max(latDelta, minDelta),
+  //     longitudeDelta: Math.max(lngDelta, minDelta),
+  //   });
+
+  //   // Usar setTimeout para asegurar que el mapa esté listo
+  //   setTimeout(() => {
+  //     if (mapRef.current) {
+  //       mapRef.current.animateToRegion({
+  //         latitude: centerLat,
+  //         longitude: centerLng,
+  //         latitudeDelta: Math.max(latDelta, minDelta),
+  //         longitudeDelta: Math.max(lngDelta, minDelta),
+  //       }, 1000); // Animación de 1 segundo
+  //     }
+  //   }, 100);
+  //   }
+  // };
   const selectMap = (map) => {
   setSelectedMap(map);
   setShowMapList(false);
   
-  // Centrar el mapa alrededor de todos los nodos
-  if (map.nodes && map.nodes.length > 0 && mapRef.current && isMapReady) {
-    // Calcular el bounding box que contenga todos los nodos
-    const coordinates = map.nodes.map(node => ({
+  // Filtrar nodos con coordenadas válidas
+  const validNodes = map.nodes?.filter(node => 
+    validateCoordinates(node.latitude, node.longitude)
+  ) || [];
+
+  if (validNodes.length > 0 && mapRef.current && isMapReady) {
+    const coordinates = validNodes.map(node => ({
       latitude: node.latitude,
       longitude: node.longitude
     }));
     
-    // Calcular los límites del área
     const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
-    
-    // Calcular el centro del área
     const centerLat = (minLat + maxLat) / 2;
     const centerLng = (minLng + maxLng) / 2;
-    
-    // Calcular el delta apropiado para mostrar todos los puntos
-    const latDelta = (maxLat - minLat) * 1.2; // 20% de margen
-    const lngDelta = (maxLng - minLng) * 1.2; // 20% de margen
-    
-    // Asegurar un delta mínimo para que el zoom no sea demasiado cercano
+    const latDelta = (maxLat - minLat) * 1.2;
+    const lngDelta = (maxLng - minLng) * 1.2;
     const minDelta = 0.01;
     
     setRegion({
@@ -146,7 +224,6 @@ const ViewOnMap = ({ navigation, route }) => {
       longitudeDelta: Math.max(lngDelta, minDelta),
     });
 
-    // Usar setTimeout para asegurar que el mapa esté listo
     setTimeout(() => {
       if (mapRef.current) {
         mapRef.current.animateToRegion({
@@ -154,7 +231,7 @@ const ViewOnMap = ({ navigation, route }) => {
           longitude: centerLng,
           latitudeDelta: Math.max(latDelta, minDelta),
           longitudeDelta: Math.max(lngDelta, minDelta),
-        }, 1000); // Animación de 1 segundo
+        }, 1000);
       }
     }, 100);
   }
@@ -204,24 +281,16 @@ const calculateBoundingBox = (coordinates) => {
   }
   };
 
-  // const focusOnNode = (node) => {
-  //   mapRef.current.animateCamera({
-  //     center: {
-  //       latitude: node.latitude,
-  //       longitude: node.longitude,
-  //     },
-  //     zoom: 15,
-  //   });
-  //   setSelectedNode(node);
-  //   setModalVisible(true);
-  // };
   const focusOnNode = (node) => {
+  const coords = validateCoordinates(node.latitude, node.longitude);
+  if (!coords) {
+    Alert.alert(t('error'), t('invalidCoordinatesForNode'));
+    return;
+  }
+
   if (mapRef.current && isMapReady) {
     mapRef.current.animateCamera({
-      center: {
-        latitude: node.latitude,
-        longitude: node.longitude,
-      },
+      center: coords,
       zoom: 15,
     });
     setSelectedNode(node);
@@ -229,16 +298,7 @@ const calculateBoundingBox = (coordinates) => {
   }
 };
 
-  // const focusOnUserLocation = () => {
-  //   if (userLocation) {
-  //     mapRef.current.animateCamera({
-  //       center: userLocation,
-  //       zoom: 15,
-  //     });
-  //   } else {
-  //     Alert.alert('Location', 'User location not available');
-  //   }
-  // };
+
   const focusOnUserLocation = () => {
   if (mapRef.current && userLocation && isMapReady) {
     mapRef.current.animateCamera({
@@ -246,20 +306,25 @@ const calculateBoundingBox = (coordinates) => {
       zoom: 15,
     });
   } else {
-    Alert.alert('Location', 'User location not available');
+    Alert.alert(t('location'), t('userLocationNotAvailable'));
   }
 };
 
   const getNodeConnections = () => {
-    if (!selectedMap || !selectedMap.connections) return [];
-    return selectedMap.connections;
-  };
+  if (!selectedMap || !selectedMap.connections) return [];
+  
+  return selectedMap.connections.filter(connection => {
+    const fromCoords = validateCoordinates(connection.from.latitude, connection.from.longitude);
+    const toCoords = validateCoordinates(connection.to.latitude, connection.to.longitude);
+    return fromCoords && toCoords;
+  });
+};
 
   const getNodeIcon = (type) => {
     switch (type) {
       case 'MDF': return 'server';
       case 'pedestal': return 'cube';
-      case 'IDF': return 'hardware-chip';
+      // case 'IDF': return 'hardware-chip';
       case 'unit': return 'home';
       default: return 'help';
     }
@@ -272,7 +337,7 @@ const calculateBoundingBox = (coordinates) => {
       case 'inactive': return '#e74c3c';
       case 'MDF': return '#e74c3c';
       case 'pedestal': return '#3498db';
-      case 'IDF': return '#2ecc71';
+      // case 'IDF': return '#2ecc71';
       case 'unit': return '#f39c12';
       default: return '#3498db';
     }
@@ -295,28 +360,31 @@ const calculateBoundingBox = (coordinates) => {
     >
       <View style={styles.mapItemHeader}>
         <Ionicons name="map" size={24} color="#3498db" />
-        <Text style={styles.mapItemTitle}>Project: {item.projectId}</Text>
+        <Text style={[styles.mapItemTitle]}>
+    {t('project')}: {item.projectId}</Text>
       </View>
       
       <View style={styles.mapItemDetails}>
         <View style={styles.mapItemDetail}>
           <Ionicons name="location" size={16} color="#7f8c8d" />
-          <Text style={styles.mapItemText}>{item.nodes?.length || 0} nodes</Text>
+          <Text style={[styles.mapItemText, { color: colors.subText }]}>
+    {item.nodes?.length || 0} {t('nodes')}</Text>
         </View>
         
         <View style={styles.mapItemDetail}>
           <Ionicons name="git-merge" size={16} color="#7f8c8d" />
-          <Text style={styles.mapItemText}>{item.connections?.length || 0} connections</Text>
+          <Text style={[styles.mapItemText, { color: colors.subText }]}>
+   {item.connections?.length || 0} {t('connections')}</Text>
         </View>
       </View>
       
-      <Text style={styles.mapItemDate}>
-        Created: {formatDate(item.createdAt)}
+      <Text style={[styles.mapItemDate, { color: colors.subText }]}>
+    {t('created')}: {formatDate(item.createdAt)}
       </Text>
       
       {item.updatedAt && item.updatedAt !== item.createdAt && (
-        <Text style={styles.mapItemDate}>
-          Updated: {formatDate(item.updatedAt)}
+        <Text style={[styles.mapItemDate, { color: colors.subText }]}>
+    {t('updated')}: {formatDate(item.updatedAt)}
         </Text>
       )}
     </TouchableOpacity>
@@ -326,37 +394,40 @@ const calculateBoundingBox = (coordinates) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.loadingText}>Loading saved maps...</Text>
+        <Text style={[styles.loadingText, { color: colors.subText }]}>
+    {t('loadingSavedMaps')}</Text>
       </View>
     );
   }
 
   if (showMapList) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }, { paddingTop: device.topInset + 10 }]}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color="#2c3e50" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Saved Network Maps</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+    {t('savedNetworkMaps')}</Text>
           <TouchableOpacity onPress={loadSavedMaps}>
             <Ionicons name="refresh" size={24} color="#3498db" />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
-            placeholder="Search maps by project ID..."
+            // style={styles.searchInput}
+            placeholder={t('searchMapsPlaceholder')}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#7f8c8d"
+            placeholderTextColor={colors.subText}
+    style={[styles.searchInput, { backgroundColor: colors.input, color: colors.text }]}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -369,9 +440,10 @@ const calculateBoundingBox = (coordinates) => {
         {filteredMaps.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="map-outline" size={64} color="#bdc3c7" />
-            <Text style={styles.emptyStateText}>No saved maps found</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Create network maps in the Network Map section to see them here
+            <Text style={[styles.emptyStateText, { color: colors.text }]}>
+    {t('noSavedMaps')}</Text>
+            <Text style={[styles.emptyStateSubtext, { color: colors.subText }]}>
+    {t('createMapsToSeeHere')}
             </Text>
           </View>
         ) : (
@@ -388,17 +460,17 @@ const calculateBoundingBox = (coordinates) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: device.topInset + 10 } ]}>
         <TouchableOpacity 
           onPress={() => setShowMapList(true)}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {selectedMap?.projectId || 'Network Map'}
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+    {selectedMap?.projectId || t('networkMap')}
         </Text>
         <TouchableOpacity onPress={getLocation}>
           <Ionicons name="navigate" size={24} color="#3498db" />
@@ -408,19 +480,23 @@ const calculateBoundingBox = (coordinates) => {
       {/* Map View */}
       <MapView
         ref={mapRef}
-        style={styles.map}
-        region={region}
-        onRegionChangeComplete={setRegion}
-        showsUserLocation={true}
-        showsMyLocationButton={false}
-        onMapReady={handleMapReady}
+  style={styles.map}
+  region={region}
+  onRegionChangeComplete={setRegion}
+  showsUserLocation={true}
+  showsMyLocationButton={false}
+  onMapReady={handleMapReady}
+  onMapError={(error) => console.log('Error del mapa:', error)}
+  onMarkerPress={(e) => {
+    console.log('Marker pressed:', e.nativeEvent);
+  }}
       >
         {/* User Location */}
         {userLocation && (
           <Marker
             coordinate={userLocation}
-            title="Your Location"
-            description="Current position"
+            title={t('yourLocation')}
+    description={t('currentPosition')}
           >
             <View style={styles.userMarker}>
               <Ionicons name="person" size={16} color="#ffffff" />
@@ -429,7 +505,7 @@ const calculateBoundingBox = (coordinates) => {
         )}
 
         {/* Project Nodes */}
-        {selectedMap?.nodes?.map((node, index) => (
+        {/* {selectedMap?.nodes?.map((node, index) => (
           <Marker
             key={node.id || `node-${index}`}
             coordinate={{ latitude: node.latitude, longitude: node.longitude }}
@@ -441,7 +517,25 @@ const calculateBoundingBox = (coordinates) => {
               <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
             </View>
           </Marker>
-        ))}
+        ))} */}
+        {selectedMap?.nodes?.map((node, index) => {
+  const coords = validateCoordinates(node.latitude, node.longitude);
+  if (!coords) return null;
+
+  return (
+    <Marker
+      key={node.id || `node-${index}`}
+      coordinate={coords}
+      title={node.name}
+      description={node.type}
+      onPress={() => focusOnNode(node)}
+    >
+      <View style={[styles.marker, { backgroundColor: getNodeColor(getNodeStatus(node)) }]}>
+        <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
+      </View>
+    </Marker>
+  );
+}).filter(Boolean)}
 
         {/* Connections */}
         {getNodeConnections().map((connection, index) => (
@@ -479,12 +573,12 @@ const calculateBoundingBox = (coordinates) => {
   onRequestClose={() => setModalVisible(false)}
 >
   <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
+    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
       {selectedNode && (
         <>
           <View style={styles.modalHeader}>
             <View style={[styles.statusIndicator, { backgroundColor: getNodeColor(getNodeStatus(selectedNode)) }]} />
-            <Text style={styles.modalTitle}>{selectedNode.name}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedNode.name}</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
               <Ionicons name="close" size={24} color="#2c3e50" />
             </TouchableOpacity>
@@ -494,13 +588,13 @@ const calculateBoundingBox = (coordinates) => {
             <View style={styles.modalBody}>
               <View style={styles.detailRow}>
                 <Ionicons name={getNodeIcon(selectedNode.type)} size={20} color="#3498db" />
-                <Text style={styles.detailLabel}>Type:</Text>
-                <Text style={styles.detailValue}>{selectedNode.type}</Text>
+                <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('type')}:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.type}</Text>
               </View>
 
               <View style={styles.detailRow}>
                 <Ionicons name="information-circle" size={20} color="#3498db" />
-                <Text style={styles.detailLabel}>Status:</Text>
+                <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('status')}:</Text>
                 <Text style={[styles.detailValue, { color: getNodeColor(getNodeStatus(selectedNode)) }]}>
                   {getNodeStatus(selectedNode).toUpperCase()}
                 </Text>
@@ -509,38 +603,39 @@ const calculateBoundingBox = (coordinates) => {
               {selectedNode.address && (
                 <View style={styles.detailRow}>
                   <Ionicons name="location" size={20} color="#3498db" />
-                  <Text style={styles.detailLabel}>Address:</Text>
-                  <Text style={styles.detailValue}>{selectedNode.address}</Text>
+                  <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('address')}:</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.address}</Text>
                 </View>
               )}
 
               {selectedNode.owner && (
                 <View style={styles.detailRow}>
                   <Ionicons name="person" size={20} color="#3498db" />
-                  <Text style={styles.detailLabel}>Owner:</Text>
-                  <Text style={styles.detailValue}>{selectedNode.owner}</Text>
+                  <Text style={[styles.detailLabel, { color: colors.subText }]}>{t('owner')}:</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedNode.owner}</Text>
                 </View>
               )}
 
               {selectedNode.description && (
-                <Text style={styles.description}>{selectedNode.description}</Text>
+                <Text style={[styles.description, { color: colors.text, backgroundColor: colors.card, borderLeftColor: colors.border }]}>
+    {selectedNode.description}</Text>
               )}
 
               {/* Show devices if available */}
               {selectedNode.devices && selectedNode.devices.length > 0 && (
                 <>
-                  <Text style={styles.sectionTitle}>Devices:</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('devices')}:</Text>
                   <View style={styles.sectionContainer}>
                     {selectedNode.devices.map((device, index) => (
                       <View key={index} style={styles.itemCard}>
                         <View style={styles.itemHeader}>
                           <Ionicons name="hardware-chip" size={18} color="#3498db" />
-                          <Text style={styles.itemTitle}>{device.type}</Text>
+                          <Text style={[styles.itemTitle, { color: colors.text }]}>{device.type}</Text>
                         </View>
                         <View style={styles.itemDetails}>
-                          <Text style={styles.itemDetail}>Ports: {device.ports}</Text>
-                          <Text style={styles.itemDetail}>Quantity: {device.quantity}</Text>
-                          {device.model && <Text style={styles.itemDetail}>Model: {device.model}</Text>}
+                          <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('ports')}: {device.ports}</Text>
+                          <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('quantity')}: {device.quantity}</Text>
+                          {device.model && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('model')}: {device.model}</Text>}
                         </View>
                       </View>
                     ))}
@@ -551,18 +646,18 @@ const calculateBoundingBox = (coordinates) => {
               {/* Show fibers if available */}
               {selectedNode.fibers && selectedNode.fibers.length > 0 && (
                 <>
-                  <Text style={styles.sectionTitle}>Fibers:</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('fibers')}:</Text>
                   <View style={styles.sectionContainer}>
                     {selectedNode.fibers.map((fiber, index) => (
                       <View key={index} style={styles.itemCard}>
                         <View style={styles.itemHeader}>
                           <Ionicons name="git-merge" size={18} color="#3498db" />
-                          <Text style={styles.itemTitle}>{fiber.type}</Text>
+                          <Text style={[styles.itemTitle, { color: colors.text }]}>{fiber.type}</Text>
                         </View>
                         <View style={styles.itemDetails}>
-                          <Text style={styles.itemDetail}>Quantity: {fiber.quantity}</Text>
-                          {fiber.coreCount && <Text style={styles.itemDetail}>Cores: {fiber.coreCount}</Text>}
-                          {fiber.length && <Text style={styles.itemDetail}>Length: {fiber.length}m</Text>}
+                          <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('quantity')}: {fiber.quantity}</Text>
+                          {fiber.coreCount && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('cores')}: {fiber.coreCount}</Text>}
+                          {fiber.length && <Text style={[styles.itemDetail, { color: colors.subText }]}>{t('length')}: {fiber.length}m</Text>}
                         </View>
                       </View>
                     ))}
@@ -585,16 +680,17 @@ const calculateBoundingBox = (coordinates) => {
 </Modal>
 
       {/* Map Info Panel */}
-      <View style={styles.infoPanel}>
-        <Text style={styles.infoPanelTitle}>{selectedMap?.projectId}</Text>
-        <Text style={styles.infoPanelText}>
-          {selectedMap?.nodes?.length || 0} nodes • {selectedMap?.connections?.length || 0} connections
+      <View style={[styles.infoPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.infoPanelTitle, { color: colors.text }]}>
+    {selectedMap?.projectId}</Text>
+        <Text style={[styles.infoPanelText, { color: colors.subText }]}>
+    {selectedMap?.nodes?.length || 0} {t('nodes')} • {selectedMap?.connections?.length || 0} {t('connections')}
         </Text>
         <TouchableOpacity 
           style={styles.infoPanelButton}
           onPress={() => setShowMapList(true)}
         >
-          <Text style={styles.infoPanelButtonText}>Change Map</Text>
+          <Text style={styles.infoPanelButtonText}>{t('changeMap')}</Text>
         </TouchableOpacity>
       </View>
     </View>
