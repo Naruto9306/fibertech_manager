@@ -193,47 +193,47 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   };
 
   const selectMap = (map) => {
-    Alert.alert('✅ ' + t('success'), t('viewmap'));
+    // Alert.alert('✅ ' + t('success'), t('viewmap'));
     // Metodo para abrir el mapa en la app de mapas predeterminada
-    // setSelectedMap(map);
-    // setShowMapList(false);
+    setSelectedMap(map);
+    setShowMapList(false);
     
-    // // Filtrar nodos con coordenadas válidas
-    // const validNodes = map.nodes?.filter(node => 
-    //   validateCoordinates(node.latitude, node.longitude)
-    // ) || [];
+    // Filtrar nodos con coordenadas válidas
+    const validNodes = map.nodes?.filter(node => 
+      validateCoordinates(node.latitude, node.longitude)
+    ) || [];
 
-    // if (validNodes.length > 0 && mapRef.current && isMapReady) {
-    //   const coordinates = validNodes.map(node => ({
-    //     latitude: node.latitude,
-    //     longitude: node.longitude
-    //   }));
+    if (validNodes.length > 0 && mapRef.current && isMapReady) {
+      const coordinates = validNodes.map(node => ({
+        latitude: node.latitude,
+        longitude: node.longitude
+      }));
       
-    //   const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
-    //   const centerLat = (minLat + maxLat) / 2;
-    //   const centerLng = (minLng + maxLng) / 2;
-    //   const latDelta = (maxLat - minLat) * 1.2;
-    //   const lngDelta = (maxLng - minLng) * 1.2;
-    //   const minDelta = 0.01;
+      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(coordinates);
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+      const latDelta = (maxLat - minLat) * 1.2;
+      const lngDelta = (maxLng - minLng) * 1.2;
+      const minDelta = 0.01;
       
-    //   setRegion({
-    //     latitude: centerLat,
-    //     longitude: centerLng,
-    //     latitudeDelta: Math.max(latDelta, minDelta),
-    //     longitudeDelta: Math.max(lngDelta, minDelta),
-    //   });
+      setRegion({
+        latitude: centerLat,
+        longitude: centerLng,
+        latitudeDelta: Math.max(latDelta, minDelta),
+        longitudeDelta: Math.max(lngDelta, minDelta),
+      });
 
-    //   setTimeout(() => {
-    //     if (mapRef.current) {
-    //       mapRef.current.animateToRegion({
-    //         latitude: centerLat,
-    //         longitude: centerLng,
-    //         latitudeDelta: Math.max(latDelta, minDelta),
-    //         longitudeDelta: Math.max(lngDelta, minDelta),
-    //       }, 1000);
-    //     }
-    //   }, 100);
-    // }
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            latitude: centerLat,
+            longitude: centerLng,
+            latitudeDelta: Math.max(latDelta, minDelta),
+            longitudeDelta: Math.max(lngDelta, minDelta),
+          }, 1000);
+        }
+      }, 100);
+    }
   };
 
   // Función para calcular el bounding box
@@ -477,7 +477,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   return (
     <View style={[stylesFull.screen, { backgroundColor: colors.background }, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset + 10 } ]}>
+      <View style={[styles.header, { paddingTop: topInset + 15 } ]}>
         <TouchableOpacity 
           onPress={() => setShowMapList(true)}
           style={styles.backButton}

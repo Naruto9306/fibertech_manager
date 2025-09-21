@@ -1935,7 +1935,7 @@ const getColorHexCode = (colorName) => {
 };
 
   return (
-    <View style={[stylesFull.screen, {backgroundColor: theme.background}, { paddingTop: topInset + 15, paddingBottom: bottomInset }]}>
+    <View style={[stylesFull.screen, {backgroundColor: theme.background}, { paddingTop: topInset , paddingBottom: bottomInset }]}>
 
       <NotificationContainer />
       <MapView

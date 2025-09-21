@@ -166,15 +166,15 @@ const ConnectivityDevices = ({ route, navigation, theme }) => {
       await DeviceConfigService.saveDeviceConfig(projectId, selectedDevices);
       await FiberConfigService.saveFiberConfig(projectId, selectedFibers);
 
-      Alert.alert('✅ ' + t('success'), t('configurationSaved1'), [
-        {
-          text: t('ok'),
-          onPress: () => navigation.navigate('Dashboard')
-        }
-      ]);
+      // Alert.alert('✅ ' + t('success'), t('configurationSaved1'), [
+      //   {
+      //     text: t('ok'),
+      //     onPress: () => navigation.navigate('Dashboard')
+      //   }
+      // ]);
       
       // Navegar al mapa de la red
-      // navigation.navigate('NetworkMap', { projectId })
+      navigation.navigate('NetworkMap', { projectId })
 
       // Alert.alert('✅ ' + t('success'), t('configurationSaved'), [
       //   {
