@@ -787,6 +787,43 @@ export const initializeStorage = async () => {
   }
 };
 
+// Función para obtener un proyecto completo con todos sus datos relacionados
+export const getCompleteProjectData = async (projectId) => {
+  try {
+    const project = await ProjectService.getProjectById(projectId);
+    if (!project) return null;
+
+    // Obtener mapas de red asociados a este proyecto
+    const networkMaps = await NetworkMapService.getNetworkMapById(projectId);
+    
+    // Obtener otros datos relacionados si es necesario (unidades, nodos, etc.)
+    // const units = await UnitsService.getUnitsByProjectId(projectId);
+    const nodes = await NodeService.getNodesByProject(projectId);
+
+    return {
+      ...project,
+      networkMaps,
+      // units,
+      nodes,
+      // otros datos que quieras incluir
+    };
+  } catch (error) {
+    console.error('Error getting complete project data:', error);
+    throw error;
+  }
+};
+
+// Función para exportar todos los datos del proyecto en formato JSON
+export const exportProjectData = async (projectId) => {
+  try {
+    const completeData = await getCompleteProjectData(projectId);
+    return JSON.stringify(completeData);
+  } catch (error) {
+    console.error('Error exporting project data:', error);
+    throw error;
+  }
+};
+
 // Export main services
 export default {
   StorageService,
@@ -794,9 +831,11 @@ export default {
   UnitsService,
   ProjectTypeService,
   NodeService,
-  NetworkMapService, // ← NUEVO SERVICIO
+  NetworkMapService,
   DeviceConfigService,
   FiberConfigService,
   FileService,
+  getCompleteProjectData,
+  exportProjectData,
   initializeStorage
 };

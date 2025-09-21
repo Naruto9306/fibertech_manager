@@ -86,7 +86,8 @@
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "expo-barcode-scanner"
     ],
     "extra": {
       "eas": {

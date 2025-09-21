@@ -1,3 +1,964 @@
+// // import {
+// //   View,
+// //   Text,
+// //   StyleSheet,
+// //   TouchableOpacity,
+// //   Alert,
+// //   Modal,
+// //   ScrollView,
+// //   Image,
+// //   Linking,
+// //   ActivityIndicator,
+// //   Clipboard
+// // } from 'react-native';
+// // import { Ionicons } from '@expo/vector-icons';
+// // import { CameraView, useCameraPermissions } from 'expo-camera';
+// // import * as ImagePicker from 'expo-image-picker';
+// // import * as FileSystem from 'expo-file-system';
+// // import { BarCodeScanner } from 'expo-barcode-scanner'; // Importación CORRECTA
+// // import Constants from 'expo-constants'; // Importar Constants
+// // import { useTranslation } from '../hooks/useTranslation';
+// // import { useApp } from '../context/AppContext';
+// // import { useDevice } from '../context/DeviceContext';
+// // import { importProjectData } from '../../service/storage';
+
+// // const ScanQr = ({ navigation }) => {
+// //   const { topInset, bottomInset, stylesFull } = useDevice;
+// //   const [permission, requestPermission] = useCameraPermissions();
+// //   const [scanned, setScanned] = useState(false);
+// //   const [cameraVisible, setCameraVisible] = useState(true);
+// //   const [scanHistory, setScanHistory] = useState([]);
+// //   const [selectedScan, setSelectedScan] = useState(null);
+// //   const [modalVisible, setModalVisible] = useState(false);
+// //   const [importing, setImporting] = useState(false);
+// //   const [loadingImage, setLoadingImage] = useState(false);
+
+// //   const { t } = useTranslation();
+// //   const { isDarkMode } = useApp();
+
+// //   // Cargar historial de escaneos desde almacenamiento local
+// //   useEffect(() => {
+// //     loadScanHistory();
+// //   }, []);
+
+// //   const loadScanHistory = async () => {
+// //     try {
+// //       // Aquí deberías cargar el historial real desde AsyncStorage o tu base de datos
+// //       // Por ahora usamos datos de ejemplo
+// //       const exampleScans = [
+// //         {
+// //           id: 1,
+// //           type: 'Fiber Project',
+// //           code: 'FBR-PROJECT-001',
+// //           location: 'Main Distribution Frame',
+// //           timestamp: '2024-03-15 10:30:45',
+// //           status: 'Active',
+// //           data: null
+// //         }
+// //       ];
+// //       setScanHistory(exampleScans);
+// //     } catch (error) {
+// //       console.error('Error loading scan history:', error);
+// //     }
+// //   };
+
+// //   const handleBarCodeScanned = ({ type, data }) => {
+// //     setScanned(true);
+// //     setCameraVisible(false);
+    
+// //     // Procesar el código QR escaneado
+// //     processScannedData(data);
+// //   };
+
+// //   const processScannedData = async (data) => {
+// //     try {
+// //       // Intentar parsear como JSON (si es un proyecto)
+// //       const parsedData = JSON.parse(data);
+      
+// //       // Verificar si es un proyecto de Fiber
+// //       if (parsedData.projectType === 'fiberProject' || parsedData.propertyName) {
+// //         // Es un proyecto de Fiber
+// //         const newScan = {
+// //           id: Date.now(),
+// //           type: 'Fiber Project',
+// //           code: parsedData.projectId || parsedData.propertyName,
+// //           location: parsedData.propertyAddress || 'Unknown Location',
+// //           timestamp: new Date().toLocaleString(),
+// //           status: 'Imported',
+// //           data: parsedData
+// //         };
+        
+// //         setScanHistory(prev => [newScan, ...prev]);
+        
+// //         Alert.alert(
+// //           t('projectQRScanned'),
+// //           `${t('project')}: ${parsedData.propertyName || parsedData.projectId}\n${t('address')}: ${parsedData.propertyAddress || t('unknown')}`,
+// //           [
+// //             {
+// //               text: t('viewDetails'),
+// //               onPress: () => viewScanDetails(newScan)
+// //             },
+// //             {
+// //               text: t('importProject'),
+// //               onPress: () => importProject(parsedData)
+// //             },
+// //             {
+// //               text: t('scanAgain'),
+// //               onPress: () => resetScanner(),
+// //               style: 'cancel'
+// //             }
+// //           ]
+// //         );
+// //       } else {
+// //         // Es otro tipo de datos JSON
+// //         addToHistory(data, 'JSON Data');
+// //       }
+// //     } catch (error) {
+// //       // Si no es JSON, tratar como código simple
+// //       addToHistory(data, 'Text Code');
+// //     }
+// //   };
+
+// //   const addToHistory = (data, type = 'Unknown') => {
+// //     const newScan = {
+// //       id: Date.now(),
+// //       type: type,
+// //       code: data.length > 30 ? data.substring(0, 30) + '...' : data,
+// //       location: 'Scanned Location',
+// //       timestamp: new Date().toLocaleString(),
+// //       status: 'New Scan',
+// //       data: data
+// //     };
+    
+// //     setScanHistory(prev => [newScan, ...prev]);
+    
+// //     Alert.alert(
+// //       t('qrScanned'),
+// //       `${t('content')}: ${data}`,
+// //       [
+// //         {
+// //           text: t('ok'),
+// //           onPress: () => resetScanner()
+// //         }
+// //       ]
+// //     );
+// //   };
+
+// //   const importProject = async (projectData) => {
+// //     try {
+// //       setImporting(true);
+      
+// //       // Usar la función de importación del servicio de almacenamiento
+// //       const success = await importProjectData(projectData);
+      
+// //       if (success) {
+// //         Alert.alert(
+// //           t('success'),
+// //           t('projectImportedSuccessfully'),
+// //           [
+// //             {
+// //               text: t('ok'),
+// //               onPress: () => {
+// //                 resetScanner();
+// //                 // Opcional: navegar a la vista de proyectos
+// //                 navigation.navigate('Projects');
+// //               }
+// //             }
+// //           ]
+// //         );
+// //       } else {
+// //         throw new Error('Import failed');
+// //       }
+// //     } catch (error) {
+// //       console.error('Error importing project:', error);
+// //       Alert.alert(t('error'), t('couldNotImportProject'));
+// //     } finally {
+// //       setImporting(false);
+// //     }
+// //   };
+
+// //   const viewScanDetails = (scan) => {
+// //     setSelectedScan(scan);
+// //     setModalVisible(true);
+// //   };
+
+// //   const resetScanner = () => {
+// //     setScanned(false);
+// //     setCameraVisible(true);
+// //   };
+
+// //   const openHistory = () => {
+// //     setModalVisible(true);
+// //   };
+
+// //   // Función para seleccionar imagen de la galería - CORREGIDA
+// //   const pickImageFromGallery = async () => {
+// //     try {
+// //       setLoadingImage(true);
+      
+// //       // Verificar si estamos en Expo Go
+// //       const isExpoGo = Constants.appOwnership === 'expo';
+      
+// //       if (isExpoGo) {
+// //         Alert.alert(
+// //           '📱 Limitación de Expo Go',
+// //           'La aplicación Expo Go no puede acceder completo a la galería. Para usar esta función:\n\n1. Crea un development build\n2. O usa la entrada manual de código',
+// //           [
+// //             {
+// //               text: 'Entrada manual',
+// //               onPress: () => manualQRInput()
+// //             },
+// //             {
+// //               text: 'Crear build',
+// //               onPress: () => Linking.openURL('https://docs.expo.dev/develop/development-builds/create-a-build/')
+// //             },
+// //             {
+// //               text: 'Entendido',
+// //               style: 'cancel'
+// //             }
+// //           ]
+// //         );
+// //         setLoadingImage(false);
+// //         return;
+// //       }
+      
+// //       // Si no estamos en Expo Go, proceder normalmente
+// //       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+// //       if (status !== 'granted') {
+// //         Alert.alert(t('permissionDenied'), t('galleryPermissionMessage'));
+// //         setLoadingImage(false);
+// //         return;
+// //       }
+
+// //       const result = await ImagePicker.launchImageLibraryAsync({
+// //         mediaTypes: ImagePicker.MediaTypeOptions.images,
+// //         allowsEditing: true,
+// //         aspect: [1, 1],
+// //         quality: 1,
+// //       });
+
+// //       if (!result.canceled) {
+// //         // Procesar la imagen seleccionada
+// //         await processImageQR(result.assets[0].uri);
+// //       }
+// //     } catch (error) {
+// //       console.error('Error picking image:', error);
+// //       Alert.alert(t('error'), t('errorPickingImage'));
+// //     } finally {
+// //       setLoadingImage(false);
+// //     }
+// //   };
+
+// //   // Función para procesar QR desde imagen - CORREGIDA
+// //   const processImageQR = async (imageUri) => {
+// //     try {
+// //       setLoadingImage(true);
+      
+// //       // Usar el método correcto de BarCodeScanner
+// //       const result = await BarCodeScanner.scanFromURLAsync(imageUri);
+      
+// //       if (result && result.length > 0 && result[0].data) {
+// //         setScanned(true);
+// //         setCameraVisible(false);
+// //         processScannedData(result[0].data);
+// //       } else {
+// //         Alert.alert(t('noQRFound'), t('noQRCodeInImage'));
+// //       }
+// //     } catch (error) {
+// //       console.error('Error procesando QR de imagen:', error);
+      
+// //       // Ofrecer entrada manual como alternativa
+// //       Alert.alert(
+// //         t('error'),
+// //         t('errorProcessingQRImage'),
+// //         [
+// //           {
+// //             text: t('cancel'),
+// //             style: 'cancel'
+// //           },
+// //           {
+// //             text: t('manualInput'),
+// //             onPress: () => manualQRInput()
+// //           }
+// //         ]
+// //       );
+// //     } finally {
+// //       setLoadingImage(false);
+// //     }
+// //   };
+
+// //   // Alternativa: permitir al usuario ingresar manualmente el código QR
+// //   const manualQRInput = () => {
+// //     Alert.prompt(
+// //       t('manualQRInput'),
+// //       t('enterQRCodeManually'),
+// //       [
+// //         {
+// //           text: t('cancel'),
+// //           style: 'cancel',
+// //         },
+// //         {
+// //           text: t('process'),
+// //           onPress: (data) => {
+// //             if (data && data.trim()) {
+// //               setScanned(true);
+// //               setCameraVisible(false);
+// //               processScannedData(data.trim());
+// //             }
+// //           },
+// //         },
+// //       ],
+// //       'plain-text'
+// //     );
+// //   };
+
+// //   const simulateScan = () => {
+// //     // Simular escaneo de un código QR de proyecto Fiber
+// //     const mockProjectData = JSON.stringify({
+// //       projectType: 'fiberProject',
+// //       projectId: 'FBR-2024-001',
+// //       propertyName: 'OAK GATE CONDO PH3',
+// //       propertyAddress: '601-615 NW 29th AVE',
+// //       city: 'GAINESVILLE',
+// //       totalUnits: 128,
+// //       buildType: 'MDU',
+// //       scanDate: new Date().toISOString(),
+// //       // Datos adicionales que podría contener un proyecto Fiber
+// //       fibers: [
+// //         { id: 'F1', status: 'active', length: 150 },
+// //         { id: 'F2', status: 'active', length: 150 }
+// //       ],
+// //       splices: [
+// //         { id: 'S1', location: 'Main Panel', loss: 0.2 }
+// //       ]
+// //     });
+    
+// //     processScannedData(mockProjectData);
+// //   };
+
+//   // const renderProjectDetails = () => {
+//   //   if (!selectedScan || !selectedScan.data) return null;
+    
+//   //   const project = selectedScan.data;
+    
+//   //   return (
+//   //     <View style={styles.detailsContainer}>
+//   //       <Text style={styles.detailTitle}>{t('projectInformation')}</Text>
+        
+//   //       <View style={styles.detailItem}>
+//   //         <Text style={styles.detailLabel}>{t('propertyName')}:</Text>
+//   //         <Text style={styles.detailValue}>{project.propertyName || project.projectId || t('unknown')}</Text>
+//   //       </View>
+        
+//   //       <View style={styles.detailItem}>
+//   //         <Text style={styles.detailLabel}>{t('address')}:</Text>
+//   //         <Text style={styles.detailValue}>{project.propertyAddress || t('unknown')}</Text>
+//   //       </View>
+        
+//   //       {project.city && (
+//   //         <View style={styles.detailItem}>
+//   //           <Text style={styles.detailLabel}>{t('city')}:</Text>
+//   //           <Text style={styles.detailValue}>{project.city}</Text>
+//   //         </View>
+//   //       )}
+        
+//   //       {project.totalUnits && (
+//   //         <View style={styles.detailItem}>
+//   //           <Text style={styles.detailLabel}>{t('totalUnits')}:</Text>
+//   //           <Text style={styles.detailValue}>{project.totalUnits}</Text>
+//   //         </View>
+//   //       )}
+        
+//   //       {project.buildType && (
+//   //         <View style={styles.detailItem}>
+//   //           <Text style={styles.detailLabel}>{t('buildType')}:</Text>
+//   //           <Text style={styles.detailValue}>{project.buildType}</Text>
+//   //         </View>
+//   //       )}
+        
+//   //       {project.fibers && (
+//   //         <View style={styles.detailItem}>
+//   //           <Text style={styles.detailLabel}>{t('fibersCount')}:</Text>
+//   //           <Text style={styles.detailValue}>{project.fibers.length}</Text>
+//   //         </View>
+//   //       )}
+        
+//   //       {project.splices && (
+//   //         <View style={styles.detailItem}>
+//   //           <Text style={styles.detailLabel}>{t('splicesCount')}:</Text>
+//   //           <Text style={styles.detailValue}>{project.splices.length}</Text>
+//   //         </View>
+//   //       )}
+        
+//   //       <TouchableOpacity 
+//   //         style={styles.viewProjectButton}
+//   //         onPress={() => {
+//   //           setModalVisible(false);
+//   //           importProject(project);
+//   //         }}
+//   //         disabled={importing}
+//   //       >
+//   //         {importing ? (
+//   //           <ActivityIndicator color="#ffffff" />
+//   //         ) : (
+//   //           <Text style={styles.viewProjectButtonText}>{t('importProject')}</Text>
+//   //         )}
+//   //       </TouchableOpacity>
+//   //     </View>
+//   //   );
+//   // };
+
+//   // const renderTextDetails = () => {
+//   //   if (!selectedScan) return null;
+    
+//   //   return (
+//   //     <View style={styles.detailsContainer}>
+//   //       <Text style={styles.detailTitle}>{t('scannedContent')}</Text>
+        
+//   //       <View style={styles.dataContainer}>
+//   //         <Text style={styles.dataText}>{selectedScan.data}</Text>
+//   //       </View>
+        
+//   //       <TouchableOpacity 
+//   //         style={styles.actionButton}
+//   //         onPress={() => {
+//   //           // Copiar al portapapeles
+//   //           Clipboard.setString(selectedScan.data);
+//   //           Alert.alert(t('success'), t('copiedToClipboard'));
+//   //         }}
+//   //       >
+//   //         <Text style={styles.actionButtonText}>{t('copyToClipboard')}</Text>
+//   //       </TouchableOpacity>
+        
+//   //       {selectedScan.data && selectedScan.data.startsWith('http') && (
+//   //         <TouchableOpacity 
+//   //           style={[styles.actionButton, { backgroundColor: '#3498db' }]}
+//   //           onPress={() => Linking.openURL(selectedScan.data)}
+//   //         >
+//   //           <Text style={styles.actionButtonText}>{t('openLink')}</Text>
+//   //         </TouchableOpacity>
+//   //       )}
+//   //     </View>
+//   //   );
+//   // };
+
+// //   if (!permission) {
+// //     return <View />;
+// //   }
+
+// //   if (!permission.granted) {
+// //     return (
+// //       <View style={styles.container}>
+// //         <View style={styles.permissionContainer}>
+// //           <Ionicons name="camera-outline" size={64} color="#7f8c8d" />
+// //           <Text style={styles.permissionTitle}>{t('cameraAccess')}</Text>
+// //           <Text style={styles.permissionText}>
+// //             {t('cameraAccessMessage')}
+// //           </Text>
+// //           <TouchableOpacity 
+// //             style={styles.permissionButton}
+// //             onPress={requestPermission}
+// //           >
+// //             <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
+// //           </TouchableOpacity>
+// //         </View>
+// //       </View>
+// //     );
+// //   }
+
+// //   return (
+// //     <View style={[styles.container, { paddingBottom: bottomInset }]}>
+// //       {/* Header */}
+// //       <View style={[styles.header, { paddingTop: topInset + 15 }]}>
+// //         <TouchableOpacity 
+// //           onPress={() => navigation.goBack()}
+// //           style={styles.backButton}
+// //         >
+// //           <Ionicons name="arrow-back" size={24} color="#ffffff" />
+// //         </TouchableOpacity>
+// //         <Text style={styles.headerTitle}>{t('scanQrCode')}</Text>
+// //         <TouchableOpacity onPress={openHistory}>
+// //           <Ionicons name="time-outline" size={24} color="#3498db" />
+// //         </TouchableOpacity>
+// //       </View>
+
+// //       {/* Camera View */}
+// //       {cameraVisible && (
+// //         <View style={styles.cameraContainer}>
+// //           <CameraView
+// //             style={styles.camera}
+// //             facing="back"
+// //             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+// //             barcodeScannerSettings={{
+// //               barcodeTypes: ['qr', 'pdf417']
+// //             }}
+// //           />
+// //           <View style={styles.overlay}>
+// //             <View style={styles.scanFrame}>
+// //               <View style={styles.cornerTopLeft} />
+// //               <View style={styles.cornerTopRight} />
+// //               <View style={styles.cornerBottomLeft} />
+// //               <View style={styles.cornerBottomRight} />
+// //             </View>
+            
+// //             <Text style={styles.scanText}>{t('alignQrInFrame')}</Text>
+            
+// //             <View style={styles.controls}>
+// //               <TouchableOpacity 
+// //                 style={styles.simulateButton}
+// //                 onPress={simulateScan}
+// //               >
+// //                 <Ionicons name="qr-code-outline" size={20} color="#ffffff" />
+// //                 <Text style={styles.simulateButtonText}>{t('simulateScan')}</Text>
+// //               </TouchableOpacity>
+              
+// //               <TouchableOpacity 
+// //                 style={[styles.simulateButton, { backgroundColor: '#9b59b6', marginTop: 10 }]}
+// //                 onPress={pickImageFromGallery}
+// //                 disabled={loadingImage}
+// //               >
+// //                 {loadingImage ? (
+// //                   <ActivityIndicator size="small" color="#ffffff" />
+// //                 ) : (
+// //                   <>
+// //                     <Ionicons name="image-outline" size={20} color="#ffffff" />
+// //                     <Text style={styles.simulateButtonText}>{t('loadFromGallery')}</Text>
+// //                   </>
+// //                 )}
+// //               </TouchableOpacity>
+
+// //               <TouchableOpacity 
+// //                 style={[styles.simulateButton, { backgroundColor: '#e67e22', marginTop: 10 }]}
+// //                 onPress={manualQRInput}
+// //               >
+// //                 <Ionicons name="create-outline" size={20} color="#ffffff" />
+// //                 <Text style={styles.simulateButtonText}>{t('manualInput')}</Text>
+// //               </TouchableOpacity>
+// //             </View>
+// //           </View>
+// //         </View>
+// //       )}
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   TouchableOpacity,
+//   Alert,
+//   Modal,
+//   ScrollView,
+//   Linking,
+//   ActivityIndicator,
+//   Clipboard
+// } from 'react-native';
+// import { Ionicons } from '@expo/vector-icons';
+// import { CameraView, useCameraPermissions } from 'expo-camera';
+// import * as ImagePicker from 'expo-image-picker';
+// import * as FileSystem from 'expo-file-system';
+// import Constants from 'expo-constants';
+// import { useTranslation } from '../hooks/useTranslation';
+// import { useApp } from '../context/AppContext';
+// import { useDevice } from '../context/DeviceContext';
+// import { importProjectData } from '../../service/storage';
+
+// const ScanQr = ({ navigation }) => {
+//   const { topInset, bottomInset, stylesFull } = useDevice;
+//   const [permission, requestPermission] = useCameraPermissions();
+//   const [scanned, setScanned] = useState(false);
+//   const [cameraVisible, setCameraVisible] = useState(true);
+//   const [scanHistory, setScanHistory] = useState([]);
+//   const [selectedScan, setSelectedScan] = useState(null);
+//   const [modalVisible, setModalVisible] = useState(false);
+//   const [importing, setImporting] = useState(false);
+//   const [loadingImage, setLoadingImage] = useState(false);
+
+//   const { t } = useTranslation();
+//   const { isDarkMode } = useApp();
+
+//   // Cargar historial de escaneos desde almacenamiento local
+//   useEffect(() => {
+//     loadScanHistory();
+//   }, []);
+
+//   const loadScanHistory = async () => {
+//     try {
+//       const exampleScans = [
+//         {
+//           id: 1,
+//           type: 'Fiber Project',
+//           code: 'FBR-PROJECT-001',
+//           location: 'Main Distribution Frame',
+//           timestamp: '2024-03-15 10:30:45',
+//           status: 'Active',
+//           data: null
+//         }
+//       ];
+//       setScanHistory(exampleScans);
+//     } catch (error) {
+//       console.error('Error loading scan history:', error);
+//     }
+//   };
+
+//   const handleBarCodeScanned = ({ type, data }) => {
+//     setScanned(true);
+//     setCameraVisible(false);
+//     processScannedData(data);
+//   };
+
+//   const processScannedData = async (data) => {
+//     try {
+//       const parsedData = JSON.parse(data);
+      
+//       if (parsedData.projectType === 'fiberProject' || parsedData.propertyName) {
+//         const newScan = {
+//           id: Date.now(),
+//           type: 'Fiber Project',
+//           code: parsedData.projectId || parsedData.propertyName,
+//           location: parsedData.propertyAddress || 'Unknown Location',
+//           timestamp: new Date().toLocaleString(),
+//           status: 'Imported',
+//           data: parsedData
+//         };
+        
+//         setScanHistory(prev => [newScan, ...prev]);
+        
+//         Alert.alert(
+//           t('projectQRScanned'),
+//           `${t('project')}: ${parsedData.propertyName || parsedData.projectId}\n${t('address')}: ${parsedData.propertyAddress || t('unknown')}`,
+//           [
+//             {
+//               text: t('viewDetails'),
+//               onPress: () => viewScanDetails(newScan)
+//             },
+//             {
+//               text: t('importProject'),
+//               onPress: () => importProject(parsedData)
+//             },
+//             {
+//               text: t('scanAgain'),
+//               onPress: () => resetScanner(),
+//               style: 'cancel'
+//             }
+//           ]
+//         );
+//       } else {
+//         addToHistory(data, 'JSON Data');
+//       }
+//     } catch (error) {
+//       addToHistory(data, 'Text Code');
+//     }
+//   };
+
+//   const addToHistory = (data, type = 'Unknown') => {
+//     const newScan = {
+//       id: Date.now(),
+//       type: type,
+//       code: data.length > 30 ? data.substring(0, 30) + '...' : data,
+//       location: 'Scanned Location',
+//       timestamp: new Date().toLocaleString(),
+//       status: 'New Scan',
+//       data: data
+//     };
+    
+//     setScanHistory(prev => [newScan, ...prev]);
+    
+//     Alert.alert(
+//       t('qrScanned'),
+//       `${t('content')}: ${data}`,
+//       [
+//         {
+//           text: t('ok'),
+//           onPress: () => resetScanner()
+//         }
+//       ]
+//     );
+//   };
+
+//   const importProject = async (projectData) => {
+//     try {
+//       setImporting(true);
+//       const success = await importProjectData(projectData);
+      
+//       if (success) {
+//         Alert.alert(
+//           t('success'),
+//           t('projectImportedSuccessfully'),
+//           [
+//             {
+//               text: t('ok'),
+//               onPress: () => {
+//                 resetScanner();
+//                 navigation.navigate('Projects');
+//               }
+//             }
+//           ]
+//         );
+//       } else {
+//         throw new Error('Import failed');
+//       }
+//     } catch (error) {
+//       console.error('Error importing project:', error);
+//       Alert.alert(t('error'), t('couldNotImportProject'));
+//     } finally {
+//       setImporting(false);
+//     }
+//   };
+
+//   const viewScanDetails = (scan) => {
+//     setSelectedScan(scan);
+//     setModalVisible(true);
+//   };
+
+//   const resetScanner = () => {
+//     setScanned(false);
+//     setCameraVisible(true);
+//   };
+
+//   const openHistory = () => {
+//     setModalVisible(true);
+//   };
+
+//   // Función para seleccionar imagen de la galería - SIMPLIFICADA
+//   const pickImageFromGallery = async () => {
+//     try {
+//       setLoadingImage(true);
+      
+//       const isExpoGo = Constants.appOwnership === 'expo';
+      
+//       if (isExpoGo) {
+//         Alert.alert(
+//           '📱 Limitación de Expo Go',
+//           'Para escanear QR desde galería necesitas crear un development build.',
+//           [
+//             {
+//               text: 'Entrada manual',
+//               onPress: () => manualQRInput()
+//             },
+//             {
+//               text: 'Entendido',
+//               style: 'cancel'
+//             }
+//           ]
+//         );
+//         setLoadingImage(false);
+//         return;
+//       }
+      
+//       // Para development builds, intentar acceder a la galería
+//       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+//       if (status !== 'granted') {
+//         Alert.alert('Permiso denegado', 'Se necesita permiso para acceder a la galería');
+//         setLoadingImage(false);
+//         return;
+//       }
+
+//       const result = await ImagePicker.launchImageLibraryAsync({
+//         mediaTypes: ImagePicker.MediaTypeOptions.images,
+//         allowsEditing: true,
+//         aspect: [1, 1],
+//         quality: 1,
+//       });
+
+//       if (!result.canceled) {
+//         // En development builds, podrías implementar el escaneo aquí
+//         Alert.alert(
+//           'Función en desarrollo',
+//           'El escaneo de QR desde galería está disponible solo en development builds completos.',
+//           [
+//             {
+//               text: 'Entrada manual',
+//               onPress: () => manualQRInput()
+//             }
+//           ]
+//         );
+//       }
+//     } catch (error) {
+//       console.error('Error accediendo a galería:', error);
+//       Alert.alert('Error', 'No se pudo acceder a la galería');
+//     } finally {
+//       setLoadingImage(false);
+//     }
+//   };
+
+//   // Alternativa: permitir al usuario ingresar manualmente el código QR
+//   const manualQRInput = () => {
+//     Alert.prompt(
+//       t('manualQRInput'),
+//       t('enterQRCodeManually'),
+//       [
+//         {
+//           text: t('cancel'),
+//           style: 'cancel',
+//         },
+//         {
+//           text: t('process'),
+//           onPress: (data) => {
+//             if (data && data.trim()) {
+//               setScanned(true);
+//               setCameraVisible(false);
+//               processScannedData(data.trim());
+//             }
+//           },
+//         },
+//       ],
+//       'plain-text'
+//     );
+//   };
+
+//   const simulateScan = () => {
+//     const mockProjectData = JSON.stringify({
+//       projectType: 'fiberProject',
+//       projectId: 'FBR-2024-001',
+//       propertyName: 'OAK GATE CONDO PH3',
+//       propertyAddress: '601-615 NW 29th AVE',
+//       city: 'GAINESVILLE',
+//       totalUnits: 128,
+//       buildType: 'MDU',
+//       scanDate: new Date().toISOString(),
+//       fibers: [
+//         { id: 'F1', status: 'active', length: 150 },
+//         { id: 'F2', status: 'active', length: 150 }
+//       ],
+//       splices: [
+//         { id: 'S1', location: 'Main Panel', loss: 0.2 }
+//       ]
+//     });
+    
+//     processScannedData(mockProjectData);
+//   };
+
+//   // ... (el resto de las funciones renderProjectDetails, renderTextDetails se mantienen igual)
+
+//     const renderTextDetails = () => {
+//     if (!selectedScan) return null;
+    
+//     return (
+//       <View style={styles.detailsContainer}>
+//         <Text style={styles.detailTitle}>{t('scannedContent')}</Text>
+        
+//         <View style={styles.dataContainer}>
+//           <Text style={styles.dataText}>{selectedScan.data}</Text>
+//         </View>
+        
+//         <TouchableOpacity 
+//           style={styles.actionButton}
+//           onPress={() => {
+//             // Copiar al portapapeles
+//             Clipboard.setString(selectedScan.data);
+//             Alert.alert(t('success'), t('copiedToClipboard'));
+//           }}
+//         >
+//           <Text style={styles.actionButtonText}>{t('copyToClipboard')}</Text>
+//         </TouchableOpacity>
+        
+//         {selectedScan.data && selectedScan.data.startsWith('http') && (
+//           <TouchableOpacity 
+//             style={[styles.actionButton, { backgroundColor: '#3498db' }]}
+//             onPress={() => Linking.openURL(selectedScan.data)}
+//           >
+//             <Text style={styles.actionButtonText}>{t('openLink')}</Text>
+//           </TouchableOpacity>
+//         )}
+//       </View>
+//     );
+//   };
+
+//     const renderProjectDetails = () => {
+//     if (!selectedScan || !selectedScan.data) return null;
+    
+//     const project = selectedScan.data;
+    
+//     return (
+//       <View style={styles.detailsContainer}>
+//         <Text style={styles.detailTitle}>{t('projectInformation')}</Text>
+        
+//         <View style={styles.detailItem}>
+//           <Text style={styles.detailLabel}>{t('propertyName')}:</Text>
+//           <Text style={styles.detailValue}>{project.propertyName || project.projectId || t('unknown')}</Text>
+//         </View>
+        
+//         <View style={styles.detailItem}>
+//           <Text style={styles.detailLabel}>{t('address')}:</Text>
+//           <Text style={styles.detailValue}>{project.propertyAddress || t('unknown')}</Text>
+//         </View>
+        
+//         {project.city && (
+//           <View style={styles.detailItem}>
+//             <Text style={styles.detailLabel}>{t('city')}:</Text>
+//             <Text style={styles.detailValue}>{project.city}</Text>
+//           </View>
+//         )}
+        
+//         {project.totalUnits && (
+//           <View style={styles.detailItem}>
+//             <Text style={styles.detailLabel}>{t('totalUnits')}:</Text>
+//             <Text style={styles.detailValue}>{project.totalUnits}</Text>
+//           </View>
+//         )}
+        
+//         {project.buildType && (
+//           <View style={styles.detailItem}>
+//             <Text style={styles.detailLabel}>{t('buildType')}:</Text>
+//             <Text style={styles.detailValue}>{project.buildType}</Text>
+//           </View>
+//         )}
+        
+//         {project.fibers && (
+//           <View style={styles.detailItem}>
+//             <Text style={styles.detailLabel}>{t('fibersCount')}:</Text>
+//             <Text style={styles.detailValue}>{project.fibers.length}</Text>
+//           </View>
+//         )}
+        
+//         {project.splices && (
+//           <View style={styles.detailItem}>
+//             <Text style={styles.detailLabel}>{t('splicesCount')}:</Text>
+//             <Text style={styles.detailValue}>{project.splices.length}</Text>
+//           </View>
+//         )}
+        
+//         <TouchableOpacity 
+//           style={styles.viewProjectButton}
+//           onPress={() => {
+//             setModalVisible(false);
+//             importProject(project);
+//           }}
+//           disabled={importing}
+//         >
+//           {importing ? (
+//             <ActivityIndicator color="#ffffff" />
+//           ) : (
+//             <Text style={styles.viewProjectButtonText}>{t('importProject')}</Text>
+//           )}
+//         </TouchableOpacity>
+//       </View>
+//     );
+//   };
+
+//   if (!permission) {
+//     return <View />;
+//   }
+
+//   if (!permission.granted) {
+//     return (
+//       <View style={styles.container}>
+//         <View style={styles.permissionContainer}>
+//           <Ionicons name="camera-outline" size={64} color="#7f8c8d" />
+//           <Text style={styles.permissionTitle}>{t('cameraAccess')}</Text>
+//           <Text style={styles.permissionText}>
+//             {t('cameraAccessMessage')}
+//           </Text>
+//           <TouchableOpacity 
+//             style={styles.permissionButton}
+//             onPress={requestPermission}
+//           >
+//             <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+//     );
+//   }
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,13 +968,19 @@ import {
   Alert,
   Modal,
   ScrollView,
-  Image
+  Linking,
+  ActivityIndicator,
+  Clipboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../context/AppContext';
 import { useDevice } from '../context/DeviceContext';
+import { importProjectData } from '../../service/storage';
 
 const ScanQr = ({ navigation }) => {
   const { topInset, bottomInset, stylesFull } = useDevice;
@@ -23,44 +990,54 @@ const ScanQr = ({ navigation }) => {
   const [scanHistory, setScanHistory] = useState([]);
   const [selectedScan, setSelectedScan] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [scannedData, setScannedData] = useState(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
 
   const { t } = useTranslation();
   const { isDarkMode } = useApp();
 
-  // Datos de ejemplo para el historial
-  const exampleScans = [
-    {
-      id: 1,
-      type: 'Fiber Cable',
-      code: 'FBR-2024-001',
-      location: 'Main Distribution Frame',
-      timestamp: '2024-03-15 10:30:45',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      type: 'Switch',
-      code: 'SW-2024-008',
-      location: 'Server Room A',
-      timestamp: '2024-03-14 14:22:18',
-      status: 'Maintenance Needed'
-    },
-    {
-      id: 3,
-      type: 'ONT',
-      code: 'ONT-2024-123',
-      location: 'Apartment 305',
-      timestamp: '2024-03-13 09:15:32',
-      status: 'Installed'
-    }
-  ];
-
+  // Cargar historial de escaneos desde almacenamiento local
   useEffect(() => {
-    // Cargar historial de escaneos (simulado)
-    setScanHistory(exampleScans);
+    loadScanHistory();
   }, []);
 
+  const loadScanHistory = async () => {
+    try {
+      const history = await AsyncStorage.getItem('scanHistory');
+      if (history) {
+        setScanHistory(JSON.parse(history));
+      } else {
+        const exampleScans = [
+          {
+            id: 1,
+            type: 'Fiber Project',
+            code: 'FBR-PROJECT-001',
+            location: 'Main Distribution Frame',
+            timestamp: '2024-03-15 10:30:45',
+            status: 'Active',
+            data: null
+          }
+        ];
+        setScanHistory(exampleScans);
+      }
+    } catch (error) {
+      console.error('Error loading scan history:', error);
+    }
+  };
+
+  const saveScanHistory = async (newHistory) => {
+    try {
+      await AsyncStorage.setItem('scanHistory', JSON.stringify(newHistory));
+    } catch (error) {
+      console.error('Error saving scan history:', error);
+    }
+  };
+
   const handleBarCodeScanned = ({ type, data }) => {
+    if (scanned) return; // Prevenir múltiples escaneos
+    
     setScanned(true);
     setCameraVisible(false);
     
@@ -68,113 +1045,733 @@ const ScanQr = ({ navigation }) => {
     processScannedData(data);
   };
 
-  const processScannedData = (data) => {
-    try {
-      // Intentar parsear como JSON (si es un proyecto)
-      const parsedData = JSON.parse(data);
+  // const processScannedData = async (data) => {
+  //   try {
+  //     // Intentar parsear como JSON (si es un proyecto)
+  //     const parsedData = JSON.parse(data);
       
+  //     // Verificar si es un proyecto de Fiber
+  //     if (parsedData.projectType === 'fiberProject' || parsedData.propertyName) {
+  //       // Verificar si ya existe en el historial
+  //       const existingScan = scanHistory.find(scan => 
+  //         scan.data && (
+  //           scan.data.projectId === parsedData.projectId || 
+  //           scan.data.propertyName === parsedData.propertyName
+  //         )
+  //       );
+
+  //       if (existingScan) {
+  //         Alert.alert(
+  //           t('projectAlreadyExists'),
+  //           t('projectAlreadyExistsMessage'),
+  //           [
+  //             {
+  //               text: t('viewDetails'),
+  //               onPress: () => viewScanDetails(existingScan)
+  //             },
+  //             {
+  //               text: t('scanAgain'),
+  //               onPress: () => resetScanner(),
+  //               style: 'cancel'
+  //             }
+  //           ]
+  //         );
+  //         return;
+  //       }
+
+  //       // Es un proyecto nuevo de Fiber
+  //       const newScan = {
+  //         id: Date.now(),
+  //         type: 'Fiber Project',
+  //         code: parsedData.projectId || parsedData.propertyName,
+  //         location: parsedData.propertyAddress || 'Unknown Location',
+  //         timestamp: new Date().toLocaleString(),
+  //         status: 'Pending Import',
+  //         data: parsedData
+  //       };
+        
+  //       // Guardar en el estado y mostrar modal
+  //       setScannedData(newScan);
+  //       setShowResultsModal(true);
+        
+  //     } else {
+  //       // Es otro tipo de datos JSON
+  //       addToHistory(data, 'JSON Data');
+  //     }
+  //   } catch (error) {
+  //     // Si no es JSON, tratar como código simple
+  //     addToHistory(data, 'Text Code');
+  //   }
+  // };
+
+  const processScannedData = async (data) => {
+  try {
+
+    // Verificar si los datos son demasiado grandes
+    if (data.length > 2000) {
       Alert.alert(
-        'Project QR Scanned',
-        `Project: ${parsedData.propertyName}\nAddress: ${parsedData.propertyAddress}`,
+        t('largeData'),
+        t('largeDataMessage'),
         [
           {
-            text: 'View Details',
-            onPress: () => viewScanDetails(parsedData)
+            text: t('viewContent'),
+            onPress: () => {
+              const newScan = {
+                id: Date.now(),
+                type: 'Large Data',
+                code: data.substring(0, 30) + '...',
+                timestamp: new Date().toLocaleString(),
+                status: 'Too Large',
+                data: data
+              };
+              setScannedData(newScan);
+              setShowResultsModal(true);
+            }
           },
           {
-            text: 'Scan Again',
+            text: t('scanAgain'),
             onPress: () => resetScanner(),
             style: 'cancel'
           }
         ]
       );
+      return;
+    }
+    // Intentar parsear como JSON
+    const parsedData = JSON.parse(data);
+    
+    // Verificar si es un proyecto de Fiber (con datos más específicos)
+    if (parsedData.projectType === 'fiberProject' || parsedData.projectId) {
+      // Crear objeto con solo la información esencial para mostrar
+      const displayData = {
+        projectType: parsedData.projectType,
+        projectId: parsedData.projectId,
+        propertyName: parsedData.propertyName,
+        propertyAddress: parsedData.propertyAddress,
+        city: parsedData.city,
+        totalUnits: parsedData.totalUnits,
+        buildType: parsedData.buildType,
+        // No incluir arrays grandes como fibers y splices
+      };
+      
+      const newScan = {
+        id: Date.now(),
+        type: 'Fiber Project',
+        code: parsedData.projectId || parsedData.propertyName,
+        location: parsedData.propertyAddress || 'Unknown Location',
+        timestamp: new Date().toLocaleString(),
+        status: 'Pending Import',
+        data: parsedData, // Guardamos todos los datos para importar
+        displayData: displayData // Datos para mostrar en el modal
+      };
+      
+      setScannedData(newScan);
+      setShowResultsModal(true);
+      
+    } else {
+      addToHistory(data, 'JSON Data');
+    }
+  } catch (error) {
+    // Si no es JSON o hay error, tratar como texto
+    addToHistory(data, 'Text Code');
+  }
+};
+
+// Nueva función para renderizar detalles del proyecto en el modal
+const renderProjectDetailsModal = () => {
+  if (!scannedData || !scannedData.displayData) return null;
+  
+  const project = scannedData.displayData;
+  
+  return (
+    <View style={styles.detailsContainer}>
+      <Text style={styles.detailTitle}>{t('projectInformation')}</Text>
+      
+      <View style={styles.detailSection}>
+        <Text style={styles.sectionTitle}>{t('basicInfo')}</Text>
+        <View style={styles.detailItem}>
+          <Ionicons name="business-outline" size={16} color="#3498db" />
+          <View style={styles.detailTextContainer}>
+            <Text style={styles.detailLabel}>{t('propertyName')}</Text>
+            <Text style={styles.detailValue}>{project.propertyName || project.projectId || t('unknown')}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.detailItem}>
+          <Ionicons name="location-outline" size={16} color="#3498db" />
+          <View style={styles.detailTextContainer}>
+            <Text style={styles.detailLabel}>{t('address')}</Text>
+            <Text style={styles.detailValue}>{project.propertyAddress || t('unknown')}</Text>
+          </View>
+        </View>
+        
+        {project.city && (
+          <View style={styles.detailItem}>
+            <Ionicons name="navigate-outline" size={16} color="#3498db" />
+            <View style={styles.detailTextContainer}>
+              <Text style={styles.detailLabel}>{t('city')}</Text>
+              <Text style={styles.detailValue}>{project.city}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.detailSection}>
+        <Text style={styles.sectionTitle}>{t('projectDetails')}</Text>
+        <View style={styles.detailsGrid}>
+          {project.totalUnits && (
+            <View style={styles.detailCard}>
+              <Ionicons name="people-outline" size={20} color="#2ecc71" />
+              <Text style={styles.detailCardValue}>{project.totalUnits}</Text>
+              <Text style={styles.detailCardLabel}>{t('totalUnits')}</Text>
+            </View>
+          )}
+          
+          {project.buildType && (
+            <View style={styles.detailCard}>
+              <Ionicons name="construct-outline" size={20} color="#e67e22" />
+              <Text style={styles.detailCardValue}>{project.buildType}</Text>
+              <Text style={styles.detailCardLabel}>{t('buildType')}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+      
+      <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.importButton]}
+          onPress={() => importProject(scannedData.data)}
+          disabled={importing}
+        >
+          {importing ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={18} color="#ffffff" />
+              <Text style={styles.actionButtonText}>{t('importProject')}</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.viewDetailsButton]}
+          onPress={() => {
+            setShowResultsModal(false);
+            // Navegar a la vista de detalles del proyecto
+            navigation.navigate('ProjectDetails', { 
+              projectData: scannedData.data,
+              fromScan: true 
+            });
+          }}
+        >
+          <Ionicons name="eye-outline" size={18} color="#ffffff" />
+          <Text style={styles.actionButtonText}>{t('viewFullDetails')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+  
+  const addToHistory = (data, type = 'Unknown') => {
+    const newScan = {
+      id: Date.now(),
+      type: type,
+      code: data.length > 30 ? data.substring(0, 30) + '...' : data,
+      location: 'Scanned Location',
+      timestamp: new Date().toLocaleString(),
+      status: 'New Scan',
+      data: data
+    };
+    
+    const updatedHistory = [newScan, ...scanHistory];
+    setScanHistory(updatedHistory);
+    saveScanHistory(updatedHistory);
+    
+    setScannedData(newScan);
+    setShowResultsModal(true);
+  };
+
+  const importProject = async (projectData) => {
+    try {
+      setImporting(true);
+      
+      // Verificar si ya existe en AsyncStorage
+      const existingProjects = await AsyncStorage.getItem('fiberProjects');
+      const projects = existingProjects ? JSON.parse(existingProjects) : [];
+      
+      const projectExists = projects.some(project => 
+        project.projectId === projectData.projectId || 
+        project.propertyName === projectData.propertyName
+      );
+      
+      if (projectExists) {
+        Alert.alert(
+          t('projectAlreadyImported'),
+          t('projectAlreadyImportedMessage'),
+          [
+            {
+              text: t('ok'),
+              onPress: () => {
+                setShowResultsModal(false);
+                resetScanner();
+              }
+            }
+          ]
+        );
+        return;
+      }
+      
+      // Usar la función de importación del servicio de almacenamiento
+      const success = await importProjectData(projectData);
+      
+      if (success) {
+        // Actualizar el estado del scan en el historial
+        const updatedHistory = scanHistory.map(scan =>
+          scan.id === scannedData.id 
+            ? { ...scan, status: 'Imported' }
+            : scan
+        );
+        
+        setScanHistory(updatedHistory);
+        saveScanHistory(updatedHistory);
+        
+        Alert.alert(
+          t('success'),
+          t('projectImportedSuccessfully'),
+          [
+            {
+              text: t('ok'),
+              onPress: () => {
+                setShowResultsModal(false);
+                resetScanner();
+                navigation.navigate('Projects');
+              }
+            }
+          ]
+        );
+      } else {
+        throw new Error('Import failed');
+      }
     } catch (error) {
-      // Si no es JSON, tratar como código simple
-      Alert.alert(
-        'QR Code Scanned',
-        `Code: ${data}`,
-        [
-          {
-            text: 'Save to History',
-            onPress: () => addToHistory(data)
-          },
-          {
-            text: 'Scan Again',
-            onPress: () => resetScanner(),
-            style: 'cancel'
-          }
-        ]
-      );
+      console.error('Error importing project:', error);
+      Alert.alert(t('error'), t('couldNotImportProject'));
+    } finally {
+      setImporting(false);
     }
   };
 
-  const addToHistory = (data) => {
-    const newScan = {
-      id: Date.now(),
-      type: 'Unknown Device',
-      code: data,
-      location: 'Scanned Location',
-      timestamp: new Date().toLocaleString(),
-      status: 'New Scan'
-    };
-    
-    setScanHistory(prev => [newScan, ...prev]);
-    resetScanner();
-  };
-
-  const viewScanDetails = (data) => {
-    setSelectedScan(data);
+  const viewScanDetails = (scan) => {
+    setSelectedScan(scan);
     setModalVisible(true);
+    setShowResultsModal(false);
   };
 
   const resetScanner = () => {
     setScanned(false);
     setCameraVisible(true);
+    setScannedData(null);
+    setShowResultsModal(false);
   };
 
   const openHistory = () => {
     setModalVisible(true);
   };
 
+  // Función para seleccionar imagen de la galería
+  const pickImageFromGallery = async () => {
+    try {
+      setLoadingImage(true);
+      
+      const isExpoGo = Constants.appOwnership === 'expo';
+      
+      if (isExpoGo) {
+        Alert.alert(
+          '📱 Limitación de Expo Go',
+          'Para escanear QR desde galería necesitas crear un development build.',
+          [
+            {
+              text: 'Entrada manual',
+              onPress: () => manualQRInput()
+            },
+            {
+              text: 'Entendido',
+              style: 'cancel'
+            }
+          ]
+        );
+        setLoadingImage(false);
+        return;
+      }
+      
+      // Para development builds
+      Alert.alert(
+        'Función en desarrollo',
+        'El escaneo de QR desde galería está disponible solo en development builds completos.',
+        [
+          {
+            text: 'Entrada manual',
+            onPress: () => manualQRInput()
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error accediendo a galería:', error);
+      Alert.alert('Error', 'No se pudo acceder a la galería');
+    } finally {
+      setLoadingImage(false);
+    }
+  };
+
+  // Alternativa: permitir al usuario ingresar manualmente el código QR
+  const manualQRInput = () => {
+    Alert.prompt(
+      t('manualQRInput'),
+      t('enterQRCodeManually'),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('process'),
+          onPress: (data) => {
+            if (data && data.trim()) {
+              setScanned(true);
+              setCameraVisible(false);
+              processScannedData(data.trim());
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
+  };
+
   const simulateScan = () => {
-    // Simular escaneo de un código QR de proyecto
+    // Simular escaneo de un código QR de proyecto Fiber
     const mockProjectData = JSON.stringify({
+      projectType: 'fiberProject',
+      projectId: 'FBR-' + Date.now(),
       propertyName: 'OAK GATE CONDO PH3',
       propertyAddress: '601-615 NW 29th AVE',
       city: 'GAINESVILLE',
       totalUnits: 128,
       buildType: 'MDU',
-      scanDate: new Date().toISOString()
+      scanDate: new Date().toISOString(),
+      fibers: [
+        { id: 'F1', status: 'active', length: 150 },
+        { id: 'F2', status: 'active', length: 150 }
+      ],
+      splices: [
+        { id: 'S1', location: 'Main Panel', loss: 0.2 }
+      ]
     });
     
     processScannedData(mockProjectData);
   };
 
-  if (!permission) {
-    return <View />;
-  }
+  // Modal para mostrar resultados del escaneo
+  const renderResultsModal = () => {
+    if (!scannedData) return null;
 
-  if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={64} color="#7f8c8d" />
-          <Text style={styles.permissionTitle}>{t('accesosCamara')}</Text>
-          <Text style={styles.permissionText}>
-            {t('needAccess')}
-          </Text>
-          <TouchableOpacity 
-            style={styles.permissionButton}
-            onPress={requestPermission}
-          >
-            <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+      <Modal
+        visible={showResultsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowResultsModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+                {t('scanResults')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowResultsModal(false)}>
+                <Ionicons name="close" size={24} color={isDarkMode ? '#ffffff' : '#000000'} />
+              </TouchableOpacity>
+            </View>
 
-  return (
+            <ScrollView style={styles.resultsScroll}>
+              {scannedData.type === 'Fiber Project' ? (
+                <View style={styles.detailsContainer}>
+                  <Text style={styles.detailTitle}>{t('projectInformation')}</Text>
+                  
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{t('propertyName')}:</Text>
+                    <Text style={styles.detailValue}>{scannedData.data.propertyName || scannedData.data.projectId || t('unknown')}</Text>
+                  </View>
+                  
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{t('address')}:</Text>
+                    <Text style={styles.detailValue}>{scannedData.data.propertyAddress || t('unknown')}</Text>
+                  </View>
+                  
+                  {scannedData.data.city && (
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>{t('city')}:</Text>
+                      <Text style={styles.detailValue}>{scannedData.data.city}</Text>
+                    </View>
+                  )}
+                  
+                  {scannedData.data.totalUnits && (
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>{t('totalUnits')}:</Text>
+                      <Text style={styles.detailValue}>{scannedData.data.totalUnits}</Text>
+                    </View>
+                  )}
+                  
+                  {scannedData.data.buildType && (
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>{t('buildType')}:</Text>
+                      <Text style={styles.detailValue}>{scannedData.data.buildType}</Text>
+                    </View>
+                  )}
+                  
+                  <TouchableOpacity 
+                    style={styles.viewProjectButton}
+                    onPress={() => importProject(scannedData.data)}
+                    disabled={importing}
+                  >
+                    {importing ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text style={styles.viewProjectButtonText}>{t('importProject')}</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.detailsContainer}>
+                  <Text style={styles.detailTitle}>{t('scannedContent')}</Text>
+                  
+                  <View style={styles.dataContainer}>
+                    <Text style={styles.dataText}>{scannedData.data}</Text>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={() => {
+                      Clipboard.setString(scannedData.data);
+                      Alert.alert(t('success'), t('copiedToClipboard'));
+                    }}
+                  >
+                    <Text style={styles.actionButtonText}>{t('copyToClipboard')}</Text>
+                  </TouchableOpacity>
+                  
+                  {scannedData.data && scannedData.data.startsWith('http') && (
+                    <TouchableOpacity 
+                      style={[styles.actionButton, { backgroundColor: '#3498db' }]}
+                      onPress={() => Linking.openURL(scannedData.data)}
+                    >
+                      <Text style={styles.actionButtonText}>{t('openLink')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={[styles.modalCloseButton, { backgroundColor: isDarkMode ? '#333333' : '#e0e0e0' }]}
+              onPress={() => {
+                setShowResultsModal(false);
+                resetScanner();
+              }}
+            >
+              <Text style={[styles.modalCloseButtonText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+                {t('scanAnother')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+//   return (
+//     <View style={[styles.container, { paddingBottom: bottomInset }]}>
+//       {/* Header */}
+//       <View style={[styles.header, { paddingTop: topInset + 15 }]}>
+//         <TouchableOpacity 
+//           onPress={() => navigation.goBack()}
+//           style={styles.backButton}
+//         >
+//           <Ionicons name="arrow-back" size={24} color="#ffffff" />
+//         </TouchableOpacity>
+//         <Text style={styles.headerTitle}>{t('scanQrCode')}</Text>
+//         <TouchableOpacity onPress={openHistory}>
+//           <Ionicons name="time-outline" size={24} color="#3498db" />
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* Camera View */}
+//       {cameraVisible && (
+//         <View style={styles.cameraContainer}>
+//           <CameraView
+//             style={styles.camera}
+//             facing="back"
+//             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+//             barcodeScannerSettings={{
+//               barcodeTypes: ['qr', 'pdf417']
+//             }}
+//           />
+//           <View style={styles.overlay}>
+//             <View style={styles.scanFrame}>
+//               <View style={styles.cornerTopLeft} />
+//               <View style={styles.cornerTopRight} />
+//               <View style={styles.cornerBottomLeft} />
+//               <View style={styles.cornerBottomRight} />
+//             </View>
+            
+//             <Text style={styles.scanText}>{t('alignQrInFrame')}</Text>
+            
+//             <View style={styles.controls}>
+//               <TouchableOpacity 
+//                 style={styles.simulateButton}
+//                 onPress={simulateScan}
+//               >
+//                 <Ionicons name="qr-code-outline" size={20} color="#ffffff" />
+//                 <Text style={styles.simulateButtonText}>{t('simulateScan')}</Text>
+//               </TouchableOpacity>
+              
+//               <TouchableOpacity 
+//                 style={[styles.simulateButton, { backgroundColor: '#9b59b6', marginTop: 10 }]}
+//                 onPress={pickImageFromGallery}
+//                 disabled={loadingImage}
+//               >
+//                 {loadingImage ? (
+//                   <ActivityIndicator size="small" color="#ffffff" />
+//                 ) : (
+//                   <>
+//                     <Ionicons name="image-outline" size={20} color="#ffffff" />
+//                     <Text style={styles.simulateButtonText}>{t('loadFromGallery')}</Text>
+//                   </>
+//                 )}
+//               </TouchableOpacity>
+
+//               <TouchableOpacity 
+//                 style={[styles.simulateButton, { backgroundColor: '#e67e22', marginTop: 10 }]}
+//                 onPress={manualQRInput}
+//               >
+//                 <Ionicons name="create-outline" size={20} color="#ffffff" />
+//                 <Text style={styles.simulateButtonText}>{t('manualInput')}</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </View>
+//         </View>
+//       )}
+
+//       {/* Results View */}
+//       {scanned && !cameraVisible && (
+//         <View style={styles.resultsContainer}>
+//           <Ionicons name="checkmark-circle" size={64} color="#2ecc71" />
+//           <Text style={styles.resultsTitle}>{t('scanSuccessful')}</Text>
+//           <Text style={styles.resultsText}>
+//             {t('qrCodeProcessed')}
+//           </Text>
+          
+//           <TouchableOpacity 
+//             style={styles.scanAgainButton}
+//             onPress={resetScanner}
+//           >
+//             <Ionicons name="scan-outline" size={20} color="#ffffff" />
+//             <Text style={styles.scanAgainButtonText}>{t('scanAnotherCode')}</Text>
+//           </TouchableOpacity>
+//         </View>
+//       )}
+
+//       {/* Scan History Modal */}
+//       <Modal
+//         visible={modalVisible}
+//         animationType="slide"
+//         transparent={true}
+//         onRequestClose={() => setModalVisible(false)}
+//       >
+//         <View style={styles.modalContainer}>
+//           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff' }]}>
+//             <View style={styles.modalHeader}>
+//               <Text style={[styles.modalTitle, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+//                 {selectedScan ? t('scanDetails') : t('scanHistory')}
+//               </Text>
+//               <TouchableOpacity onPress={() => setModalVisible(false)}>
+//                 <Ionicons name="close" size={24} color={isDarkMode ? '#ffffff' : '#000000'} />
+//               </TouchableOpacity>
+//             </View>
+
+//             {selectedScan ? (
+//               selectedScan.type === 'Fiber Project' ? renderProjectDetails() : renderTextDetails()
+//             ) : (
+//               <ScrollView style={styles.historyScroll}>
+//                 {scanHistory.length > 0 ? (
+//                   scanHistory.map((item) => (
+//                     <TouchableOpacity
+//                       key={item.id}
+//                       style={[styles.historyItem, { backgroundColor: isDarkMode ? '#2c2c2c' : '#f8f9fa' }]}
+//                       onPress={() => viewScanDetails(item)}
+//                     >
+//                       <View style={styles.historyIcon}>
+//                         <Ionicons 
+//                           name={item.type === 'Fiber Project' ? 'business' : 'qr-code'} 
+//                           size={20} 
+//                           color="#3498db" 
+//                         />
+//                       </View>
+//                       <View style={styles.historyContent}>
+//                         <Text style={[styles.historyCode, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+//                           {item.code}
+//                         </Text>
+//                         <Text style={styles.historyType}>{item.type}</Text>
+//                         <Text style={styles.historyTime}>{item.timestamp}</Text>
+//                       </View>
+//                       <View style={[
+//                         styles.statusBadge,
+//                         { backgroundColor: item.status === 'Active' ? '#2ecc71' : '#e67e22' }
+//                       ]}>
+//                         <Text style={styles.statusText}>{item.status}</Text>
+//                       </View>
+//                     </TouchableOpacity>
+//                   ))
+//                 ) : (
+//                   <View style={styles.emptyHistory}>
+//                     <Ionicons name="time-outline" size={48} color="#7f8c8d" />
+//                     <Text style={[styles.emptyHistoryText, { color: isDarkMode ? '#b0b0b0' : '#7f8c8d' }]}>
+//                       {t('noScanHistory')}
+//                     </Text>
+//                   </View>
+//                 )}
+//               </ScrollView>
+//             )}
+
+//             <TouchableOpacity 
+//               style={[styles.modalCloseButton, { backgroundColor: isDarkMode ? '#333333' : '#e0e0e0' }]}
+//               onPress={() => {
+//                 if (selectedScan) {
+//                   setSelectedScan(null);
+//                 } else {
+//                   setModalVisible(false);
+//                 }
+//               }}
+//             >
+//               <Text style={[styles.modalCloseButtonText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+//                 {selectedScan ? t('backToHistory') : t('close')}
+//               </Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </Modal>
+
+//       {(importing || loadingImage) && (
+//         <View style={styles.importingOverlay}>
+//           <ActivityIndicator size="large" color="#3498db" />
+//           <Text style={styles.importingText}>
+//             {importing ? t('importingProject') : t('processingImage')}
+//           </Text>
+//         </View>
+//       )}
+//     </View>
+//   );
+// };
+
+ return (
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topInset + 15 }]}>
@@ -182,7 +1779,7 @@ const ScanQr = ({ navigation }) => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('scanQrCode')}</Text>
         <TouchableOpacity onPress={openHistory}>
@@ -195,42 +1792,65 @@ const ScanQr = ({ navigation }) => {
         <View style={styles.cameraContainer}>
           <CameraView
             style={styles.camera}
-            facing="back"  // Cambiado de CameraType.back a string "back"
+            facing="back"
             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
             barcodeScannerSettings={{
               barcodeTypes: ['qr', 'pdf417']
             }}
           />
-            <View style={styles.overlay}>
-              <View style={styles.scanFrame}>
-                <View style={styles.cornerTopLeft} />
-                <View style={styles.cornerTopRight} />
-                <View style={styles.cornerBottomLeft} />
-                <View style={styles.cornerBottomRight} />
-              </View>
-              
-              <Text style={styles.scanText}>{t('alignScan')}</Text>
-              
-              <View style={styles.controls}>
-                <TouchableOpacity 
-                  style={styles.simulateButton}
-                  onPress={simulateScan}
-                >
-                  <Ionicons name="qr-code-outline" size={20} color="#ffffff" />
-                  <Text style={styles.simulateButtonText}>{t('simulateScan')}</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.overlay}>
+            <View style={styles.scanFrame}>
+              <View style={styles.cornerTopLeft} />
+              <View style={styles.cornerTopRight} />
+              <View style={styles.cornerBottomLeft} />
+              <View style={styles.cornerBottomRight} />
             </View>
+            
+            <Text style={styles.scanText}>{t('alignQrInFrame')}</Text>
+            
+            <View style={styles.controls}>
+              <TouchableOpacity 
+                style={styles.simulateButton}
+                onPress={simulateScan}
+              >
+                <Ionicons name="qr-code-outline" size={20} color="#ffffff" />
+                <Text style={styles.simulateButtonText}>{t('simulateScan')}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.simulateButton, { backgroundColor: '#9b59b6', marginTop: 10 }]}
+                onPress={pickImageFromGallery}
+                disabled={loadingImage}
+              >
+                {loadingImage ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="image-outline" size={20} color="#ffffff" />
+                    <Text style={styles.simulateButtonText}>{t('loadFromGallery')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.simulateButton, { backgroundColor: '#e67e22', marginTop: 10 }]}
+                onPress={manualQRInput}
+              >
+                <Ionicons name="create-outline" size={20} color="#ffffff" />
+                <Text style={styles.simulateButtonText}>{t('manualInput')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       )}
 
       {/* Results View */}
-      {scanned && !cameraVisible && (
+      {scanned && !cameraVisible && !showResultsModal && (
         <View style={styles.resultsContainer}>
           <Ionicons name="checkmark-circle" size={64} color="#2ecc71" />
-          <Text style={styles.resultsTitle}>Scan Successful!</Text>
+          <Text style={styles.resultsTitle}>{t('scanSuccessful')}</Text>
           <Text style={styles.resultsText}>
-            QR code has been processed successfully
+            {t('qrCodeProcessed')}
           </Text>
           
           <TouchableOpacity 
@@ -238,10 +1858,13 @@ const ScanQr = ({ navigation }) => {
             onPress={resetScanner}
           >
             <Ionicons name="scan-outline" size={20} color="#ffffff" />
-            <Text style={styles.scanAgainButtonText}>Scan Another Code</Text>
+            <Text style={styles.scanAgainButtonText}>{t('scanAnotherCode')}</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Modal de resultados */}
+      {renderResultsModal()}
 
       {/* Scan History Modal */}
       <Modal
@@ -251,80 +1874,62 @@ const ScanQr = ({ navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedScan ? 'Scan Details' : 'Scan History'}
+              <Text style={[styles.modalTitle, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+                {selectedScan ? t('scanDetails') : t('scanHistory')}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#2c3e50" />
+                <Ionicons name="close" size={24} color={isDarkMode ? '#ffffff' : '#000000'} />
               </TouchableOpacity>
             </View>
 
             {selectedScan ? (
-              <View style={styles.detailsContainer}>
-                <Text style={styles.detailTitle}>Project Information</Text>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Property Name:</Text>
-                  <Text style={styles.detailValue}>{selectedScan.propertyName}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Address:</Text>
-                  <Text style={styles.detailValue}>{selectedScan.propertyAddress}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>City:</Text>
-                  <Text style={styles.detailValue}>{selectedScan.city}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Total Units:</Text>
-                  <Text style={styles.detailValue}>{selectedScan.totalUnits}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Build Type:</Text>
-                  <Text style={styles.detailValue}>{selectedScan.buildType}</Text>
-                </View>
-                
-                <TouchableOpacity 
-                  style={styles.viewProjectButton}
-                  onPress={() => {
-                    setModalVisible(false);
-                    // Navegar a vista de proyecto si es necesario
-                    Alert.alert('View Project', 'Would open project details view');
-                  }}
-                >
-                  <Text style={styles.viewProjectButtonText}>View Full Project</Text>
-                </TouchableOpacity>
-              </View>
+              selectedScan.type === 'Fiber Project' ? renderProjectDetails() : renderTextDetails()
             ) : (
               <ScrollView style={styles.historyScroll}>
-                {scanHistory.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.historyItem}
-                    onPress={() => setSelectedScan(item)}
-                  >
-                    <View style={styles.historyIcon}>
-                      <Ionicons name="qr-code" size={20} color="#3498db" />
-                    </View>
-                    <View style={styles.historyContent}>
-                      <Text style={styles.historyCode}>{item.code}</Text>
-                      <Text style={styles.historyType}>{item.type}</Text>
-                      <Text style={styles.historyTime}>{item.timestamp}</Text>
-                    </View>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: item.status === 'Active' ? '#2ecc71' : '#e67e22' }
-                    ]}>
-                      <Text style={styles.statusText}>{item.status}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                {scanHistory.length > 0 ? (
+                  scanHistory.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.historyItem, { backgroundColor: isDarkMode ? '#2c2c2c' : '#f8f9fa' }]}
+                      onPress={() => viewScanDetails(item)}
+                    >
+                      <View style={styles.historyIcon}>
+                        <Ionicons 
+                          name={item.type === 'Fiber Project' ? 'business' : 'qr-code'} 
+                          size={20} 
+                          color="#3498db" 
+                        />
+                      </View>
+                      <View style={styles.historyContent}>
+                        <Text style={[styles.historyCode, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+                          {item.code}
+                        </Text>
+                        <Text style={styles.historyType}>{item.type}</Text>
+                        <Text style={styles.historyTime}>{item.timestamp}</Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: item.status === 'Imported' ? '#2ecc71' : '#e67e22' }
+                      ]}>
+                        <Text style={styles.statusText}>{item.status}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.emptyHistory}>
+                    <Ionicons name="time-outline" size={48} color="#7f8c8d" />
+                    <Text style={[styles.emptyHistoryText, { color: isDarkMode ? '#b0b0b0' : '#7f8c8d' }]}>
+                      {t('noScanHistory')}
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
             )}
 
             <TouchableOpacity 
-              style={styles.modalCloseButton}
+              style={[styles.modalCloseButton, { backgroundColor: isDarkMode ? '#333333' : '#e0e0e0' }]}
               onPress={() => {
                 if (selectedScan) {
                   setSelectedScan(null);
@@ -333,18 +1938,26 @@ const ScanQr = ({ navigation }) => {
                 }
               }}
             >
-              <Text style={styles.modalCloseButtonText}>
-                {selectedScan ? 'Back to History' : 'Close'}
+              <Text style={[styles.modalCloseButtonText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+                {selectedScan ? t('backToHistory') : t('close')}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {(importing || loadingImage) && (
+        <View style={styles.importingOverlay}>
+          <ActivityIndicator size="large" color="#3498db" />
+          <Text style={styles.importingText}>
+            {importing ? t('importingProject') : t('processingImage')}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
 
-// Los estilos permanecen igual...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -404,14 +2017,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject, // cubre toda la pantalla
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   scanFrame: {
-    width: 250, height: 250, borderWidth: 2, borderColor: '#fff', borderRadius: 12 },
-  cornerTopLeft:  { position: 'absolute', top: -2, left: -2, width: 30, height: 30, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#3498db' 
+    width: 250, 
+    height: 250, 
+    borderWidth: 2, 
+    borderColor: '#fff', 
+    borderRadius: 12,
+    position: 'relative'
   },
   cornerTopLeft: {
     position: 'absolute',
@@ -474,7 +2091,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3498db',
     padding: 12,
     borderRadius: 8,
-    marginTop: 20,
+    marginTop: 10,
   },
   simulateButtonText: {
     color: '#ffffff',
@@ -520,7 +2137,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 16,
     padding: 24,
     width: '90%',
@@ -535,7 +2151,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
   },
   historyScroll: {
     maxHeight: 400,
@@ -544,8 +2159,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderRadius: 8,
+    marginBottom: 8,
   },
   historyIcon: {
     width: 40,
@@ -562,7 +2177,6 @@ const styles = StyleSheet.create({
   historyCode: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 2,
   },
   historyType: {
@@ -590,7 +2204,6 @@ const styles = StyleSheet.create({
   detailTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -600,39 +2213,163 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#ddd',
   },
   detailLabel: {
     fontSize: 14,
-    color: '#bdc3c7',
     fontWeight: '500',
+    color: '#7f8c8d',
   },
   detailValue: {
     fontSize: 14,
-    color: '#ffffff',
     fontWeight: '600',
+    color: '#2c3e50',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  dataContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  dataText: {
+    fontSize: 14,
+    color: '#2c3e50',
   },
   viewProjectButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#2ecc71',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  actionButton: {
+    backgroundColor: '#95a5a6',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
   },
   viewProjectButtonText: {
     color: '#ffffff',
     fontWeight: '600',
   },
   modalCloseButton: {
-    backgroundColor: '#333333',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+    backgroundColor: '#3498db',
   },
   modalCloseButtonText: {
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyHistoryText: {
+    fontSize: 16,
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#7f8c8d',
+  },
+  importingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  importingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+    paddingBottom: 6,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 10,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  detailTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#2c3e50',
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  detailCard: {
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 12,
+    minWidth: 100,
+  },
+  detailCardValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginVertical: 5,
+  },
+  detailCardLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    textAlign: 'center',
+  },
+  actionButtons: {
+    marginTop: 20,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  importButton: {
+    backgroundColor: '#2ecc71',
+  },
+  viewDetailsButton: {
+    backgroundColor: '#3498db',
+  },
+  actionButtonText: {
     color: '#ffffff',
     fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

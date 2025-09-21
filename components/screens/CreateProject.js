@@ -860,14 +860,14 @@ const CreateProject = ({ navigation, route, theme }) => {
         {/* Action Buttons */}
         <View style={combinedStyles.section}>
           <View style={styles.actionButtons}>
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={[styles.actionButton, styles.qrButton, saving && styles.buttonDisabled]}
               onPress={() => setQrModalVisible(true)}
               disabled={saving}
             >
               <Ionicons name="qr-code" size={20} color="white" />
               <Text style={styles.actionButtonText}>{t('generateQR')}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity 
               style={[styles.actionButton, styles.shareButton, saving && styles.buttonDisabled]}

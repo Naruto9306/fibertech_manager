@@ -15,6 +15,7 @@ import { useApp } from '../context/AppContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { useDevice } from '../context/DeviceContext';
 import { ProjectService } from '../../service/storage';
+import QRGeneratorModal from './QRGeneratorModal';
 
 const ListaProyectos = ({ navigation }) => {
   const { topInset, bottomInset, stylesFull } = useDevice();
@@ -25,6 +26,8 @@ const ListaProyectos = ({ navigation }) => {
   const [filteredProyectos, setFilteredProyectos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   const colors = {
     background: isDarkMode ? '#121212' : '#ffffff',
@@ -64,6 +67,11 @@ const ListaProyectos = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateQRCode = (proyecto) => {
+    setSelectedProject(proyecto);
+    setQrModalVisible(true);
   };
 
   const deleteProyecto = async (proyecto) => {
@@ -172,6 +180,12 @@ const ListaProyectos = ({ navigation }) => {
           {getProjectDisplayName(item)}
         </Text>
         <TouchableOpacity 
+            onPress={() => generateQRCode(item)}
+            style={styles.qrButton}
+          >
+            <Ionicons name="qr-code" size={20} color="#3498db" />
+          </TouchableOpacity>
+        <TouchableOpacity 
           onPress={() => deleteProyecto(item)}
           style={styles.deleteButton}
         >
@@ -276,6 +290,13 @@ const ListaProyectos = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+       {/* Modal de Generación de QR */}
+      <QRGeneratorModal
+        visible={qrModalVisible}
+        onClose={() => setQrModalVisible(false)}
+        project={selectedProject}
+      />
     </View>
   );
 };
@@ -424,6 +445,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#bdc3c7',
     textAlign: 'center',
+  },
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  qrButton: {
+    padding: 4,
+    marginRight: 8,
+  },
+  deleteButton: {
+    padding: 4,
   },
 });
 
