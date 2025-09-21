@@ -869,14 +869,14 @@ const CreateProject = ({ navigation, route, theme }) => {
               <Text style={styles.actionButtonText}>{t('generateQR')}</Text>
             </TouchableOpacity> */}
 
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={[styles.actionButton, styles.shareButton, saving && styles.buttonDisabled]}
               onPress={shareProject}
               disabled={saving}
             >
               <Ionicons name="share-social" size={20} color="white" />
               <Text style={styles.actionButtonText}>{t('share')}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity 
               style={[styles.actionButton, styles.saveButton, saving && styles.saveButtonDisabled]}
