@@ -61,7 +61,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   useEffect(() => {
     if (searchQuery) {
       const filtered = savedMaps.filter(map =>
-        (map.projectName && map.projectName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (map.name && map.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (map.projectId && map.projectId.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (map.createdAt && map.createdAt.toLowerCase().includes(searchQuery.toLowerCase()))
       );
@@ -102,6 +102,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
       setLoading(true);
       const maps = await NetworkMapService.getAllNetworkMaps();
       setSavedMaps(maps);
+      // console.log(maps)
       setFilteredMaps(maps);
     } catch (error) {
       console.error('Error loading saved maps:', error);
@@ -322,6 +323,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
     switch (type) {
       case 'MDF': return 'server';
       case 'pedestal': return 'cube';
+      case 'IDF': return 'hardware-chip';
       case 'unit': return 'home';
       default: return 'help';
     }
@@ -332,8 +334,16 @@ const ViewOnMap = ({ navigation, route, theme }) => {
       case 'active': return '#2ecc71';
       case 'maintenance': return '#f39c12';
       case 'inactive': return '#e74c3c';
+      default: return '#3498db';
+    }
+  };
+
+  const getNodeColor1 = (status) => {
+    // console.log(status.type)
+    switch (status.type) {
       case 'MDF': return '#e74c3c';
       case 'pedestal': return '#3498db';
+      case 'IDF': return '#2ab656ff';
       case 'unit': return '#f39c12';
       default: return '#3498db';
     }
@@ -413,9 +423,9 @@ const ViewOnMap = ({ navigation, route, theme }) => {
 
   if (showMapList) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[stylesFull.screen, { backgroundColor: colors.background }, {paddingBottom: bottomInset}]}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset }]}>
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }, { paddingTop: topInset - 10 }]}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -477,7 +487,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   return (
     <View style={[stylesFull.screen, { backgroundColor: colors.background }, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset + 15 } ]}>
+      <View style={[styles.header, { paddingTop: topInset - 10 } ]}>
         <TouchableOpacity 
           onPress={() => setShowMapList(true)}
           style={styles.backButton}
@@ -538,7 +548,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
               description={node.type}
               onPress={() => focusOnNode(node)}
             >
-              <View style={[styles.marker, { backgroundColor: getNodeColor(getNodeStatus(node)) }]}>
+              <View style={[styles.marker, { backgroundColor: getNodeColor1(node) }]}>
                 <Ionicons name={getNodeIcon(node.type)} size={16} color="#ffffff" />
               </View>
             </Marker>

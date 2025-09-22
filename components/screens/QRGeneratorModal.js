@@ -103,10 +103,13 @@ const QRGeneratorModal = ({ visible, onClose, project }) => {
     try {
       setSaving(true);
       const qrImageUri = await captureQRCode();
+
+      const projectName = project.name || 'Unnamed Project';
+      const message = t('shareProjectMessage').replace('{projectName}', projectName);
       
       const shareOptions = {
         title: t('shareProjectQR'),
-        message: t('shareProjectMessage', { projectName: project.name || project.id }),
+        message: message,
         url: qrImageUri,
         type: 'image/png'
       };
@@ -191,11 +194,13 @@ const QRGeneratorModal = ({ visible, onClose, project }) => {
 
   const shareAsData = async () => {
     try {
+
+      const projectName = project.name || 'Unnamed Project';
+      const message = t('shareProjectMessage').replace('{projectName}', projectName);
+
       const shareOptions = {
         title: t('shareProjectData'),
-        message: `${t('shareProjectDataMessage', { 
-          projectName: project.name || project.id
-        })}\n\n${qrData}`,
+        message: `${message}\n\n${qrData}`,
       };
 
       const result = await Share.share(shareOptions);

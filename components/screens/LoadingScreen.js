@@ -15,8 +15,23 @@ const LoadingScreen = () => {
   const { isDarkMode } = useApp();
   const { t } = useTranslation();
 
+  const colors = {
+    background: isDarkMode ? '#121212' : '#f8f9fa',
+    cardBackground: isDarkMode ? '#1e1e1e' : 'white',
+    text: isDarkMode ? '#ffffff' : '#2c3e50',
+    secondaryText: isDarkMode ? '#b0b0b0' : '#7f8c8d',
+    border: isDarkMode ? '#333333' : '#ecf0f1',
+    inputBackground: isDarkMode ? '#2a2a2a' : '#f8f9fa',
+    placeholder: isDarkMode ? '#888888' : '#a0a0a0',
+    primary: '#3498db',
+    success: '#2ecc71',
+    warning: '#f39c12',
+    danger: '#e74c3c',
+    purple: '#9b59b6'
+  };
+
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <View style={[styles.container, colors.background]}>
       {/* Logo de la aplicación */}
       <View style={styles.logoContainer}>
         <Image 

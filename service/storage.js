@@ -798,13 +798,13 @@ export const getCompleteProjectData = async (projectId) => {
     
     // Obtener otros datos relacionados si es necesario (unidades, nodos, etc.)
     // const units = await UnitsService.getUnitsByProjectId(projectId);
-    const nodes = await NodeService.getNodesByProject(projectId);
+    // const nodes = await NodeService.getNodesByProject(projectId);
 
     return {
       ...project,
       networkMaps,
       // units,
-      nodes,
+      // nodes,
       // otros datos que quieras incluir
     };
   } catch (error) {

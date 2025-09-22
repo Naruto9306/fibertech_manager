@@ -1,5 +1,5 @@
 // screens/NetworkMap.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,7 @@ const NetworkMap = ({ route, navigation }) => {
    const [linkMenuVisible, setLinkMenuVisible] = useState(false);
   const [selectedNodeForMenu, setSelectedNodeForMenu] = useState(null); // ← nuevo
   const [connections, setConnections] = useState([]);
+  const notificationCounter = useRef(0);
 
   // Agregar estado para el modal de nombre del mapa
   const [showNameModal, setShowNameModal] = useState(false);
@@ -111,11 +112,31 @@ const NetworkMap = ({ route, navigation }) => {
     getCurrentLocation();
   }, []);
 
-let notificationCounter = 0;
+// let notificationCounter = 0;
   // Función para mostrar notificaciones
+// const showNotification = (message, type = 'info', duration = 3000) => {
+//   // const id = Date.now().toString();
+//   const id = `notification-${notificationCounter++}`;
+//   const newNotification = {
+//     id,
+//     message,
+//     type,
+//     duration
+//   };
+  
+//   setNotifications(prev => [...prev, newNotification]);
+  
+//   // Cerrar automáticamente después de la duración especificada
+//   if (duration > 0) {
+//     setTimeout(() => {
+//       removeNotification(id);
+//     }, duration);
+//   }
+  
+//   return id;
+// };
 const showNotification = (message, type = 'info', duration = 3000) => {
-  // const id = Date.now().toString();
-  const id = `notification-${notificationCounter++}`;
+  const id = `notification-${notificationCounter.current++}`;
   const newNotification = {
     id,
     message,
@@ -125,7 +146,6 @@ const showNotification = (message, type = 'info', duration = 3000) => {
   
   setNotifications(prev => [...prev, newNotification]);
   
-  // Cerrar automáticamente después de la duración especificada
   if (duration > 0) {
     setTimeout(() => {
       removeNotification(id);
@@ -405,205 +425,128 @@ const removeNotification = (id) => {
   };
   
   // Buscar la función saveNetworkMap y reemplazarla con esta versión actualizada
-// const saveNetworkMap = async () => {
-//   try {
-//     // Obtener todas las conexiones (automáticas + manuales)
-//     const autoConnections = getConnections();
-//     const allConnections = [...autoConnections, ...connections];
-    
-//     const networkMapData = {
-//       name,
-//       projectId,
-//       nodes: nodes,
-//       connections: allConnections, // Guardar todas las conexiones
-//       createdAt: new Date().toISOString()
-//     };
-    
-//     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
-    
-//     if (result.success) {
-//       Alert.alert(t('success'), t('networkMapSaved'), [
-//         {
-//           text: 'OK',
-//           onPress: () => navigation.navigate('Dashboard')
-//         }
-//       ]);
-//     } else {
-//       // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
-//       showNotification(t('couldNotSaveNetworkMap'), 'error');
-//     }
-//   } catch (error) {
-//     // // console.log(t('errorSavingNetworkMap'), error);
-//     showNotification(t('couldNotSaveNetworkMap'), 'error');
-//     // Alert.alert(t('error'), t('couldNotSaveNetworkMap'));
-//   }
-// };
-  const saveNetworkMap = async (name) => {
-    try {
-      // Obtener todas las conexiones (automáticas + manuales)
-      const autoConnections = getConnections();
-      const allConnections = [...autoConnections, ...connections];
-      
-      const networkMapData = {
-        name: name, // Usar el nombre proporcionado
-        projectId,
-        nodes: nodes,
-        connections: allConnections, // Guardar todas las conexiones
-        createdAt: new Date().toISOString()
-      };
-      
-      const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
-      
-      if (result.success) {
-        Alert.alert(t('success'), t('networkMapSaved'), [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Dashboard')
-          }
-        ]);
-      } else {
-        showNotification(t('couldNotSaveNetworkMap'), 'error');
-      }
-    } catch (error) {
-      showNotification(t('couldNotSaveNetworkMap'), 'error');
-    }
-  };
-  
-  // const loadSavedNetworkMap = async () => {
+
+  // const saveNetworkMap = async (name) => {
   //   try {
-  //     const savedMap = await AsyncStorage.getItem(`networkMap_${projectId}`);
-  //     if (savedMap) {
-  //       const mapData = JSON.parse(savedMap);
-        
-  //       // Actualizar el estado con los nodos guardados
-  //       setNodes(mapData.nodes || []);
-        
-  //       // Si hay información de región guardada, puedes usarla
-  //       if (mapData.nodes && mapData.nodes.length > 0) {
-  //         const firstNode = mapData.nodes[0];
-  //         setRegion({
-  //           latitude: firstNode.latitude,
-  //           longitude: firstNode.longitude,
-  //           latitudeDelta: 0.0922,
-  //           longitudeDelta: 0.0421,
-  //         });
-  //       }
-        
-  //       // // console.log(t('networkMapLoaded'), mapData.nodes.length, t('nodes'));
+  //     // Obtener todas las conexiones (automáticas + manuales)
+  //     const autoConnections = getConnections();
+  //     const allConnections = [...autoConnections, ...connections];
+      
+  //     const networkMapData = {
+  //       name: name, // Usar el nombre proporcionado
+  //       projectId,
+  //       nodes: nodes,
+  //       connections: allConnections, // Guardar todas las conexiones
+  //       createdAt: new Date().toISOString()
+  //     };
+      
+  //     const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
+      
+  //     if (result.success) {
+  //       Alert.alert(t('success'), t('networkMapSaved'), [
+  //         {
+  //           text: 'OK',
+  //           onPress: () => navigation.navigate('Dashboard')
+  //         }
+  //       ]);
+  //     } else {
+  //       showNotification(t('couldNotSaveNetworkMap'), 'error');
   //     }
   //   } catch (error) {
-  //     // // console.log(t('errorLoadingNetworkMap'), error);
+  //     showNotification(t('couldNotSaveNetworkMap'), 'error');
   //   }
   // };
-
-  // const handleMapPress = async (e) => {
-
-  //   if (linkingMode && linkSource) {
-  //   // En modo enlace, buscar el nodo más cercano a la coordenada tocada
-  //   const { coordinate } = e.nativeEvent;
-  //   const closestNode = findClosestNode(coordinate, linkSource); // ← Excluir linkSource
+  const saveNetworkMap = async (name) => {
+  try {
+    // Obtener todas las conexiones (automáticas + manuales)
+    const autoConnections = getConnections();
     
-  //   if (closestNode) {
-  //     createLink(linkSource, closestNode);
-  //   } else {
-  //     // Si no se encuentra un nodo cercano, mostrar mensaje
-  //     Alert.alert('Info', 'No se encontró ningún nodo cercano para enlazar');
-  //   }
-  //   return;
-  // }
-
-  //   if (!isAddingMode || !selectedNodeType) return;
+    // Filtrar conexiones manuales para asegurar que no haya duplicados
+    const uniqueManualConnections = connections.filter(manualConn => {
+      const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
+      const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
+      
+      // Verificar que no existe ya una conexión automática equivalente
+      return !autoConnections.some(autoConn => {
+        const autoFromId = autoConn.from.id || `temp-${autoConn.from.latitude}-${autoConn.from.longitude}`;
+        const autoToId = autoConn.to.id || `temp-${autoConn.to.latitude}-${autoConn.to.longitude}`;
+        
+        return (autoFromId === manualFromId && autoToId === manualToId) ||
+               (autoFromId === manualToId && autoToId === manualFromId);
+      });
+    });
     
-  //   const { coordinate } = e.nativeEvent;
+    const allConnections = [...autoConnections, ...uniqueManualConnections];
     
-  //   // Obtener dirección desde coordenadas
-  //   const address = await getAddressFromCoordinates(coordinate.latitude, coordinate.longitude);
+    const networkMapData = {
+      name: name,
+      projectId,
+      nodes: nodes,
+      connections: allConnections,
+      createdAt: new Date().toISOString()
+    };
     
-  //   setSelectedNode({
-  //     type: selectedNodeType,
-  //     latitude: coordinate.latitude,
-  //     longitude: coordinate.longitude,
-  //     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`
-  //   });
+    const result = await NetworkMapService.saveNetworkMap(projectId, networkMapData);
     
-  //   setNodeForm({
-  //     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`,
-  //     owner: '',
-  //     address: address,
-  //     selectedFibers: [], // Cambiado de selectedFiber a selectedFibers
-  //     selectedDevices: []
-  //   });
-    
-  //   setShowNodeModal(true);
-  // };
-
-  // Función auxiliar para encontrar el nodo más cercano
-// const findClosestNode = (coordinate) => {
-//   let closestNode = null;
-//   let minDistance = Infinity;
+    if (result.success) {
+      Alert.alert(t('success'), t('networkMapSaved'), [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Dashboard')
+        }
+      ]);
+    } else {
+      showNotification(t('couldNotSaveNetworkMap'), 'error');
+    }
+  } catch (error) {
+    console.error('Error saving network map:', error);
+    showNotification(t('couldNotSaveNetworkMap'), 'error');
+  }
+};
   
-//   nodes.forEach(node => {
-//     const distance = Math.sqrt(
-//       Math.pow(node.latitude - coordinate.latitude, 2) +
-//       Math.pow(node.longitude - coordinate.longitude, 2)
-//     );
-    
-//     if (distance < minDistance && distance < 0.001) { // Umbral de 0.001 grados
-//       minDistance = distance;
-//       closestNode = node;
-//     }
-//   });
-  
-//   return closestNode;
-// };
-
-// const handleMapPress = async (e) => {
-//   // Si estamos en modo de enlace, solo permitir agregar nuevos nodos
-//   if (linkingMode && linkSource) {
-//     if (!isAddingMode || !selectedNodeType) {
-//       // Mostrar mensaje indicando que primero debe seleccionar un tipo de nodo
-//       Alert.alert('Modo enlace activo', 'Selecciona un tipo de nodo primero para agregar y enlazar automáticamente');
-//     }
-//     return;
-//   }
-
-//   if (!isAddingMode || !selectedNodeType) return;
-  
-//   const { coordinate } = e.nativeEvent;
-  
-//   // Obtener dirección desde coordenadas
-//   const address = await getAddressFromCoordinates(coordinate.latitude, coordinate.longitude);
-  
-//   setSelectedNode({
-//     type: selectedNodeType,
-//     latitude: coordinate.latitude,
-//     longitude: coordinate.longitude,
-//     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`
-//   });
-  
-//   setNodeForm({
-//     name: `${selectedNodeType}_${nodes.filter(n => n.type === selectedNodeType).length + 1}`,
-//     owner: '',
-//     address: address,
-//     selectedFibers: [],
-//     selectedDevices: []
-//   });
-  
-//   setShowNodeModal(true);
-// };
 
 // Buscar la función loadSavedNetworkMap y reemplazarla con esta versión actualizada
+
+// const loadSavedNetworkMap = async () => {
+//   try {
+//     const savedMap = await NetworkMapService.getNetworkMapById(projectId);
+//     if (savedMap) {
+//       // Actualizar el estado con los nodos guardados
+//       setNodes(savedMap.nodes || []);
+      
+//       // Cargar las conexiones guardadas
+//       setConnections(savedMap.connections || []);
+      
+//       // Si hay información de región guardada, puedes usarla
+//       if (savedMap.nodes && savedMap.nodes.length > 0) {
+//         const firstNode = savedMap.nodes[0];
+//         setRegion({
+//           latitude: firstNode.latitude,
+//           longitude: firstNode.longitude,
+//           latitudeDelta: 0.0922,
+//           longitudeDelta: 0.0421,
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error loading network map:', error);
+//   }
+// };
 const loadSavedNetworkMap = async () => {
   try {
-    const savedMap = await NetworkMapService.getNetworkMap(projectId);
+    const savedMap = await NetworkMapService.getNetworkMapByProject(projectId);
     if (savedMap) {
-      // Actualizar el estado con los nodos guardados
       setNodes(savedMap.nodes || []);
       
-      // Cargar las conexiones guardadas
-      setConnections(savedMap.connections || []);
+      // Filtrar conexiones válidas
+      const validConnections = (savedMap.connections || []).filter(conn => 
+        conn.from && conn.to &&
+        conn.from.latitude && conn.from.longitude &&
+        conn.to.latitude && conn.to.longitude
+      );
       
-      // Si hay información de región guardada, puedes usarla
+      setConnections(validConnections);
+      
       if (savedMap.nodes && savedMap.nodes.length > 0) {
         const firstNode = savedMap.nodes[0];
         setRegion({
@@ -613,12 +556,9 @@ const loadSavedNetworkMap = async () => {
           longitudeDelta: 0.0421,
         });
       }
-      
-      // // console.log(t('networkMapLoaded'), savedMap.nodes.length, t('nodes'));
-      // // console.log(t('connectionsLoaded'), savedMap.connections?.length || 0, t('connections'));
     }
   } catch (error) {
-    // // console.log(t('errorLoadingNetworkMap'), error);
+    console.error('Error loading network map:', error);
   }
 };
 
@@ -1065,7 +1005,7 @@ const addNode = async () => {
     switch (type) {
       case 'MDF': return theme.accent;
       case 'pedestal': return theme.primary;
-      // case 'IDF': return theme.success;
+      case 'IDF': return theme.success;
       case 'unit': return theme.warning;
       default: return theme.lightText;
     }
@@ -1076,7 +1016,7 @@ const addNode = async () => {
     switch (type) {
       case 'MDF': return 'server';
       case 'pedestal': return 'cube';
-      // case 'IDF': return 'hardware-chip';
+      case 'IDF': return 'hardware-chip';
       case 'unit': return 'home';
       default: return 'help';
     }
@@ -1137,147 +1077,108 @@ const addNode = async () => {
   //   return connections;
   // };
 
-//   const getConnections = () => {
+// const getConnections = () => {
 //   const connections = [];
   
-//   // Si no hay nodos o solo hay uno, no hay conexiones
-//   if (nodes.length <= 1) return connections;
-  
-//   // Filtrar nodos válidos (con coordenadas) y que no hayan sido creados en modo enlace
+//   // Filtrar nodos válidos
 //   const validNodes = nodes.filter(node => 
 //     node.latitude && node.longitude && 
 //     typeof node.latitude === 'number' && 
 //     typeof node.longitude === 'number' &&
-//     !node.createdInLinkingMode // Excluir nodos creados en modo enlace
+//     !node.createdInLinkingMode
 //   );
   
 //   if (validNodes.length <= 1) return connections;
   
-//   // Ordenar nodos por fecha de creación (timestamp)
+//   // Ordenar y conectar nodos
 //   const sortedNodes = [...validNodes].sort((a, b) => {
-//     // Ordenar por timestamp si está disponible
 //     if (a.createdAt && b.createdAt) {
 //       return new Date(a.createdAt) - new Date(b.createdAt);
 //     }
-    
-//     // Fallback: ordenar por ID si no hay timestamp
 //     return (a.id || '').localeCompare(b.id || '');
 //   });
   
-//   // Asegurar que el MDF sea el primer nodo si existe
-//   const mdfIndex = sortedNodes.findIndex(node => node.type === 'MDF');
-//   if (mdfIndex > 0) {
-//     // Si el MDF no es el primero, moverlo al principio
-//     const mdfNode = sortedNodes.splice(mdfIndex, 1)[0];
-//     sortedNodes.unshift(mdfNode);
-//   }
-  
-//   // Conectar cada nodo con el anterior (empezando desde el segundo nodo)
+//   // Conectar nodos en orden
 //   for (let i = 1; i < sortedNodes.length; i++) {
 //     const previousNode = sortedNodes[i - 1];
 //     const currentNode = sortedNodes[i];
     
-//     // Verificar que ambos nodos tengan coordenadas válidas
-//     if (previousNode.latitude && previousNode.longitude && 
-//         currentNode.latitude && currentNode.longitude) {
+//     // Verificar si ya existe una conexión manual entre estos nodos
+//     const manualConnectionExists = connections.some(conn => {
+//       const connFromId = conn.from.id || `temp-${conn.from.latitude}-${conn.from.longitude}`;
+//       const connToId = conn.to.id || `temp-${conn.to.latitude}-${conn.to.longitude}`;
+//       const prevId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
+//       const currId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
       
-//       // Verificar si esta conexión ya existe en las conexiones manuales
-//       const connectionExists = connections.some(manualConn => {
-//         const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
-//         const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
-//         const autoFromId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
-//         const autoToId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
-        
-//         return (manualFromId === autoFromId && manualToId === autoToId) ||
-//                (manualFromId === autoToId && manualToId === autoFromId);
+//       return (connFromId === prevId && connToId === currId) ||
+//              (connFromId === currId && connToId === prevId);
+//     });
+    
+//     if (!manualConnectionExists) {
+//       connections.push({
+//         from: previousNode,
+//         to: currentNode,
+//         color: getConnectionColor(previousNode.type, currentNode.type),
+//         type: `${previousNode.type}-${currentNode.type}`,
+//         isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
+//         isAutomatic: true
 //       });
-      
-//       // Solo agregar la conexión automática si no existe una manual
-//       if (!connectionExists) {
-//         connections.push({
-//           from: previousNode,
-//           to: currentNode,
-//           color: getConnectionColor(previousNode.type, currentNode.type),
-//           type: `${previousNode.type}-${currentNode.type}`,
-//           isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
-//           isAutomatic: true // Marcar como conexión automática
-//         });
-//       }
 //     }
 //   }
   
 //   return connections;
 // };
 const getConnections = () => {
-  const connections = [];
+  const autoConnections = [];
   
-  // Si no hay nodos o solo hay uno, no hay conexiones
-  if (nodes.length <= 1) return connections;
-  
-  // Filtrar nodos válidos (con coordenadas) y que no hayan sido creados en modo enlace
+  // Filtrar nodos válidos
   const validNodes = nodes.filter(node => 
     node.latitude && node.longitude && 
     typeof node.latitude === 'number' && 
     typeof node.longitude === 'number' &&
-    !node.createdInLinkingMode // Excluir nodos creados en modo enlace
+    !node.createdInLinkingMode
   );
   
-  if (validNodes.length <= 1) return connections;
+  if (validNodes.length <= 1) return autoConnections;
   
-  // Ordenar nodos por fecha de creación (timestamp)
+  // Ordenar nodos por fecha de creación
   const sortedNodes = [...validNodes].sort((a, b) => {
-    // Ordenar por timestamp si está disponible
     if (a.createdAt && b.createdAt) {
       return new Date(a.createdAt) - new Date(b.createdAt);
     }
-    
-    // Fallback: ordenar por ID si no hay timestamp
     return (a.id || '').localeCompare(b.id || '');
   });
   
-  // Asegurar que el MDF sea el primer nodo si existe
-  const mdfIndex = sortedNodes.findIndex(node => node.type === 'MDF');
-  if (mdfIndex > 0) {
-    // Si el MDF no es el primero, moverlo al principio
-    const mdfNode = sortedNodes.splice(mdfIndex, 1)[0];
-    sortedNodes.unshift(mdfNode);
-  }
-  
-  // Conectar cada nodo con el anterior (empezando desde el segundo nodo)
+  // Conectar cada nodo con el anterior
   for (let i = 1; i < sortedNodes.length; i++) {
     const previousNode = sortedNodes[i - 1];
     const currentNode = sortedNodes[i];
     
-    // Verificar que ambos nodos tengan coordenadas válidas
-    if (previousNode.latitude && previousNode.longitude && 
-        currentNode.latitude && currentNode.longitude) {
+    // Verificar si ya existe una conexión manual entre estos nodos
+    const manualConnectionExists = connections.some(manualConn => {
+      const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
+      const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
+      const prevId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
+      const currId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
       
-      // Verificar si esta conexión ya existe en las conexiones manuales
-      const connectionExists = connections.some(manualConn => {
-        const manualFromId = manualConn.from.id || `temp-${manualConn.from.latitude}-${manualConn.from.longitude}`;
-        const manualToId = manualConn.to.id || `temp-${manualConn.to.latitude}-${manualConn.to.longitude}`;
-        const autoFromId = previousNode.id || `temp-${previousNode.latitude}-${previousNode.longitude}`;
-        const autoToId = currentNode.id || `temp-${currentNode.latitude}-${currentNode.longitude}`;
-        
-        return (manualFromId === autoFromId && manualToId === autoToId) ||
-               (manualFromId === autoToId && manualToId === autoFromId);
+      return (manualFromId === prevId && manualToId === currId) ||
+             (manualFromId === currId && manualToId === prevId);
+    });
+    
+    // Solo agregar conexión automática si no existe manual
+    if (!manualConnectionExists) {
+      autoConnections.push({
+        from: previousNode,
+        to: currentNode,
+        color: getConnectionColor(previousNode.type, currentNode.type),
+        type: `${previousNode.type}-${currentNode.type}`,
+        isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
+        isAutomatic: true
       });
-      
-      // Solo agregar la conexión automática si no existe una manual
-      if (!connectionExists) {
-        connections.push({
-          from: previousNode,
-          to: currentNode,
-          color: getConnectionColor(previousNode.type, currentNode.type),
-          type: `${previousNode.type}-${currentNode.type}`,
-          isBackbone: previousNode.type === 'MDF' || currentNode.type === 'MDF',
-          isAutomatic: true // Asegurar que esta propiedad esté presente
-        });
-      }
     }
   }
   
-  return connections;
+  return autoConnections;
 };
 
   // Obtener color de conexión según tipos de nodos
@@ -1384,37 +1285,90 @@ const getConnections = () => {
     return theme.lightText; // Color de texto claro por defecto
   };
 
+// const createLink = async (fromNode, toNode) => {
+//   // Verificar que ambos nodos existen y son diferentes
+//   if (!fromNode || !toNode) {
+//     // Alert.alert('Error', 'Nodos inválidos');
+//     showNotification('Nodos inválidos', 'error');
+//     return;
+//   }
+
+//   // Usar una comparación más robusta para IDs
+//   const fromId = fromNode.id || `temp-${fromNode.latitude}-${fromNode.longitude}`;
+//   const toId = toNode.id || `temp-${toNode.latitude}-${toNode.longitude}`;
+  
+//   if (fromId === toId) {
+//     // Alert.alert('Error', 'No puedes enlazar un nodo consigo mismo');
+//     showNotification('No puedes enlazar un nodo consigo mismo', 'error');
+//     return;
+//   }
+
+//   // Evitar duplicados con comparación robusta
+//   const exists = connections.some(
+//     c => {
+//       const cFromId = c.from.id || `temp-${c.from.latitude}-${c.from.longitude}`;
+//       const cToId = c.to.id || `temp-${c.to.latitude}-${c.to.longitude}`;
+      
+//       return (cFromId === fromId && cToId === toId) ||
+//              (cFromId === toId && cToId === fromId);
+//     }
+//   );
+  
+//   if (exists) {
+//     // Alert.alert('Info', 'El enlace ya existe');
+//     showNotification('El enlace ya existe', 'info');
+//     setLinkingMode(false);
+//     setLinkSource(null);
+//     return;
+//   }
+
+//   const newConnection = {
+//     from: fromNode,
+//     to: toNode,
+//     color: getConnectionColor(fromNode.type, toNode.type),
+//     type: `${fromNode.type}-${toNode.type}`,
+//     isBackbone: fromNode.type === 'MDF' || toNode.type === 'MDF',
+//     isAutomatic: false 
+//   };
+
+//   // Guardar en estado local
+//   setConnections(prev => [...prev, newConnection]);
+
+//   // Salir del modo enlazar
+//   setLinkingMode(false);
+//   setLinkSource(null);
+  
+//   // Alert.alert('Éxito', `Enlace creado entre ${fromNode.name} y ${toNode.name}`);
+//   showNotification(`Enlace creado entre ${fromNode.name} y ${toNode.name}`, 'success');
+// };
+  
 const createLink = async (fromNode, toNode) => {
-  // Verificar que ambos nodos existen y son diferentes
   if (!fromNode || !toNode) {
-    // Alert.alert('Error', 'Nodos inválidos');
     showNotification('Nodos inválidos', 'error');
     return;
   }
 
-  // Usar una comparación más robusta para IDs
   const fromId = fromNode.id || `temp-${fromNode.latitude}-${fromNode.longitude}`;
   const toId = toNode.id || `temp-${toNode.latitude}-${toNode.longitude}`;
   
   if (fromId === toId) {
-    // Alert.alert('Error', 'No puedes enlazar un nodo consigo mismo');
     showNotification('No puedes enlazar un nodo consigo mismo', 'error');
     return;
   }
 
-  // Evitar duplicados con comparación robusta
-  const exists = connections.some(
-    c => {
-      const cFromId = c.from.id || `temp-${c.from.latitude}-${c.from.longitude}`;
-      const cToId = c.to.id || `temp-${c.to.latitude}-${c.to.longitude}`;
-      
-      return (cFromId === fromId && cToId === toId) ||
-             (cFromId === toId && cToId === fromId);
-    }
-  );
+  // Verificar si ya existe esta conexión (incluyendo automáticas)
+  const autoConnections = getConnections();
+  const allExistingConnections = [...autoConnections, ...connections];
+  
+  const exists = allExistingConnections.some(conn => {
+    const connFromId = conn.from.id || `temp-${conn.from.latitude}-${conn.from.longitude}`;
+    const connToId = conn.to.id || `temp-${conn.to.latitude}-${conn.to.longitude}`;
+    
+    return (connFromId === fromId && connToId === toId) ||
+           (connFromId === toId && connToId === fromId);
+  });
   
   if (exists) {
-    // Alert.alert('Info', 'El enlace ya existe');
     showNotification('El enlace ya existe', 'info');
     setLinkingMode(false);
     setLinkSource(null);
@@ -1427,21 +1381,17 @@ const createLink = async (fromNode, toNode) => {
     color: getConnectionColor(fromNode.type, toNode.type),
     type: `${fromNode.type}-${toNode.type}`,
     isBackbone: fromNode.type === 'MDF' || toNode.type === 'MDF',
-    isAutomatic: false 
+    isAutomatic: false
   };
 
-  // Guardar en estado local
   setConnections(prev => [...prev, newConnection]);
-
-  // Salir del modo enlazar
   setLinkingMode(false);
   setLinkSource(null);
   
-  // Alert.alert('Éxito', `Enlace creado entre ${fromNode.name} y ${toNode.name}`);
   showNotification(`Enlace creado entre ${fromNode.name} y ${toNode.name}`, 'success');
-};
-  
-  const renderMarkers = () => {
+};  
+
+const renderMarkers = () => {
    return nodes.map((node, index) => {
     // Asegurar que las coordenadas sean números válidos
     const latitude = parseFloat(node.latitude);
@@ -1531,24 +1481,62 @@ const createLink = async (fromNode, toNode) => {
 //   }).filter(Boolean);
 // };
 
+// const renderConnections = () => {
+//   const autoConnections = getConnections();
+//   const allConnections = [...autoConnections, ...connections];
+  
+//   return allConnections.map((connection, index) => {
+//     const fromId = connection.from.id || `temp-${connection.from.latitude}-${connection.from.longitude}`;
+//     const toId = connection.to.id || `temp-${connection.to.latitude}-${connection.to.longitude}`;
+    
+//     // Validación adicional para evitar líneas fantasma
+//     if (!connection.from.latitude || !connection.from.longitude ||
+//         !connection.to.latitude || !connection.to.longitude) {
+//       return null;
+//     }
+    
+//     // Crear una clave única que incluya el tipo de conexión (automática vs manual)
+//     // Usar un valor por defecto si isAutomatic no está definido
+//     const connectionType = connection.isAutomatic === true ? 'auto' : 'manual';
+//     const uniqueKey = `connection-${fromId}-${toId}-${index}-${connectionType}`;
+    
+//     return (
+//       <Polyline
+//         key={uniqueKey}
+//         coordinates={[
+//           {
+//             latitude: connection.from.latitude,
+//             longitude: connection.from.longitude
+//           },
+//           {
+//             latitude: connection.to.latitude,
+//             longitude: connection.to.longitude
+//           }
+//         ]}
+//         strokeColor={connection.color}
+//         strokeWidth={connection.isBackbone ? 4 : 3}
+//         lineDashPattern={connection.isBackbone ? [] : [5, 5]}
+//       />
+//     );
+//   }).filter(Boolean);
+// };
+
 const renderConnections = () => {
   const autoConnections = getConnections();
   const allConnections = [...autoConnections, ...connections];
   
   return allConnections.map((connection, index) => {
-    const fromId = connection.from.id || `temp-${connection.from.latitude}-${connection.from.longitude}`;
-    const toId = connection.to.id || `temp-${connection.to.latitude}-${connection.to.longitude}`;
-    
-    // Validación adicional para evitar líneas fantasma
-    if (!connection.from.latitude || !connection.from.longitude ||
+    // Validación de coordenadas
+    if (!connection.from || !connection.to || 
+        !connection.from.latitude || !connection.from.longitude ||
         !connection.to.latitude || !connection.to.longitude) {
       return null;
     }
     
-    // Crear una clave única que incluya el tipo de conexión (automática vs manual)
-    // Usar un valor por defecto si isAutomatic no está definido
-    const connectionType = connection.isAutomatic === true ? 'auto' : 'manual';
-    const uniqueKey = `connection-${fromId}-${toId}-${index}-${connectionType}`;
+    const fromId = connection.from.id || `temp-${connection.from.latitude}-${connection.from.longitude}`;
+    const toId = connection.to.id || `temp-${connection.to.latitude}-${connection.to.longitude}`;
+    
+    const uniqueKey = `connection-${fromId}-${toId}-${index}-${connection.isAutomatic ? 'auto' : 'manual'}`;
     
     return (
       <Polyline
@@ -1983,7 +1971,7 @@ const getColorHexCode = (colorName) => {
             <Text style={styles.nodeTypeButtonText}>{t('pedestal')}</Text>
           </TouchableOpacity>
 
-          {/* <TouchableOpacity
+          <TouchableOpacity
             style={[
               styles.nodeTypeButton,
               {backgroundColor: theme.primary},
@@ -1993,7 +1981,7 @@ const getColorHexCode = (colorName) => {
           >
             <Ionicons name="hardware-chip" size={24} color="#ffffff" />
             <Text style={styles.nodeTypeButtonText}>IDF</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[
@@ -2037,7 +2025,7 @@ const getColorHexCode = (colorName) => {
         onRequestClose={() => setShowNodeModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, {backgroundColor: theme.white}]}>
+          <View style={[styles.modalContent, {backgroundColor: theme.white, maxHeight: '90%'}]}>
             <View style={[styles.modalHeader, {borderBottomColor: theme.border}]}>
               <Text style={[styles.modalTitle, {color: theme.text}]}>
                 {selectedNode?.id ? t('editNode') : t('addNode')}
@@ -2047,7 +2035,11 @@ const getColorHexCode = (colorName) => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            <ScrollView 
+            style={styles.modalBody}
+            contentContainerStyle={styles.modalBodyContent}
+            showsVerticalScrollIndicator={true}
+            >
               <View style={styles.formGroup}>
                 <Text style={[styles.label, {color: theme.text}]}>{t('nodeName')}</Text>
                 <TextInput
@@ -2360,9 +2352,9 @@ const getColorHexCode = (colorName) => {
 >
   <View style={styles.linkMenuOverlay}>
     <View style={styles.linkMenu}>
-      <Text style={styles.linkMenuTitle}>Opciones de enlace</Text>
+      <Text style={styles.linkMenuTitle}>{t('optionEnlace')}</Text>
       <Text style={styles.linkMenuSubtitle}>
-        Nodo seleccionado: {selectedNodeForMenu?.name}
+        {t('nodoSelec')} {selectedNodeForMenu?.name}
       </Text>
       
       <TouchableOpacity
@@ -2371,12 +2363,12 @@ const getColorHexCode = (colorName) => {
           setLinkSource(selectedNodeForMenu);
           setLinkingMode(true);
           setLinkMenuVisible(false);
-          Alert.alert('Modo enlace activado', 
-            'Los nuevos nodos que crees se conectarán automáticamente a este nodo. Selecciona un tipo de nodo para comenzar.');
+          Alert.alert(t('modoEnlace'), 
+            t('newNode'));
         }}
       >
         <Ionicons name="link" size={20} color="#fff" />
-        <Text style={styles.linkMenuButtonText}>Enlazar nuevos nodos desde aquí</Text>
+        <Text style={styles.linkMenuButtonText}>{t('enlazarNodoNew')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -2385,12 +2377,12 @@ const getColorHexCode = (colorName) => {
           setLinkSource(selectedNodeForMenu);
           setLinkingMode(true);
           setLinkMenuVisible(false);
-          Alert.alert('Modo enlace activado', 
-            'Toca otro nodo existente para crear una conexión.');
+          Alert.alert(t('modoEnlace'), 
+            t('touchNode'));
         }}
       >
         <Ionicons name="navigate" size={20} color="#fff" />
-        <Text style={styles.linkMenuButtonText}>Enlazar con nodo existente</Text>
+        <Text style={styles.linkMenuButtonText}>{t('enlazarNode')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -2411,7 +2403,7 @@ const getColorHexCode = (colorName) => {
     }}
   >
     <Ionicons name="close-circle" size={24} color="#fff" />
-    <Text style={styles.exitLinkingText}>Dejar de enlazar</Text>
+    <Text style={styles.exitLinkingText}>{t('dejarEnlace')}</Text>
   </TouchableOpacity>
 )}
     </View>
@@ -2516,12 +2508,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    width: '90%',
-    maxHeight: '80%',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
+  // modalContent: {
+  //   width: '90%',
+  //   maxHeight: '80%',
+  //   borderRadius: 10,
+  //   overflow: 'hidden',
+  // },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2533,10 +2525,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  modalBody: {
-    padding: 15,
-    maxHeight: '70%',
-  },
+  // modalBody: {
+  //   padding: 15,
+  //   maxHeight: '70%',
+  // },
   formGroup: {
     marginBottom: 15,
   },
@@ -2955,17 +2947,17 @@ notificationContainer: {
   notificationClose: {
     padding: 5,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
+  // modalContainer: {
+  //   flex: 1,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  // },
+  // modalContent: {
+  //   width: '90%',
+  //   borderRadius: 10,
+  //   overflow: 'hidden',
+  // },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2977,9 +2969,9 @@ notificationContainer: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  modalBody: {
-    padding: 15,
-  },
+  // modalBody: {
+  //   padding: 15,
+  // },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -3014,6 +3006,29 @@ notificationContainer: {
     fontSize: 16,
     fontWeight: 'bold',
   },
+//   modalContainer: {
+//   flex: 1,
+//   justifyContent: 'center',
+//   alignItems: 'center',
+//   backgroundColor: 'rgba(0, 0, 0, 0.5)',
+// },
+modalContent: {
+  width: '90%',
+  maxHeight: '90%', // Limitar altura máxima
+  borderRadius: 10,
+  overflow: 'hidden',
+  padding: 15
+},
+modalBody: {
+  maxHeight: '70%', // Limitar altura del cuerpo
+},
+modalBodyContent: {
+  paddingBottom: 20, // Espacio adicional al final
+},
+// Para secciones con muchos elementos, agregar scroll interno
+configSection: {
+  maxHeight: 200, // Altura máxima para secciones de configuración
+},
 });
 
 export default NetworkMap;
