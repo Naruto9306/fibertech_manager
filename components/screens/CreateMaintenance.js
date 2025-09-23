@@ -35,7 +35,7 @@ const CreateMaintenance = ({ navigation, route, device, theme }) => {
 
   const { topInset, bottomInset, stylesFull } = useDevice();
   const { t } = useTranslation();
-const { isDarkMode } = useApp();
+  const { isDarkMode } = useApp();
 
 const colors = {
   background : isDarkMode ? '#121212' : '#ffffff',
@@ -309,7 +309,7 @@ const colors = {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={[styles.content, {backgroundColor: colors.background}]}>
         {/* Basic Information */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('basicInformation')}</Text>

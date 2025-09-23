@@ -366,7 +366,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
 
   const renderMapItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.mapItem}
+      style={[styles.mapItem, { backgroundColor: colors.background }]}
       onPress={() => selectMap(item)}
     >
       <View style={styles.mapItemHeader}>
@@ -462,7 +462,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
 
         {/* Map List */}
         {filteredMaps.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, { backgroundColor: colors.background }]}>
             <Ionicons name="map-outline" size={64} color="#bdc3c7" />
             <Text style={[styles.emptyStateText, { color: colors.text }]}>
               {t('noSavedMaps')}
@@ -487,7 +487,7 @@ const ViewOnMap = ({ navigation, route, theme }) => {
   return (
     <View style={[stylesFull.screen, { backgroundColor: colors.background }, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset - 10 } ]}>
+      <View style={[styles.header, { backgroundColor: colors.background }, { paddingTop: topInset - 10 } ]}>
         <TouchableOpacity 
           onPress={() => setShowMapList(true)}
           style={styles.backButton}

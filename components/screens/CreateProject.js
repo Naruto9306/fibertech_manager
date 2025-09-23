@@ -41,6 +41,7 @@ const CreateProject = ({ navigation, route, theme }) => {
     background: isDarkMode ? '#121212' : '#f5f7fa',
     cardBackground: isDarkMode ? '#1e1e1e' : 'white',
     text: isDarkMode ? '#ffffff' : '#2c3e50',
+    qrtext: '#2c3e50',
     secondaryText: isDarkMode ? '#b0b0b0' : '#7f8c8d',
     border: isDarkMode ? '#333333' : '#e1e8ed',
     inputBackground: isDarkMode ? '#2a2a2a' : '#f8f9fa',
@@ -1096,7 +1097,7 @@ const captureQRCode = async () => {
   return (
     <View style={[stylesFull.screen,{ backgroundColor: colors.background}, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[combinedStyles.header, { paddingTop: topInset - 10}]}>
+      <View style={[combinedStyles.header, { paddingTop: topInset - 20}]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -1404,42 +1405,6 @@ const captureQRCode = async () => {
         </View>
       </ScrollView>
 
-      {/* QR Code Modal */}
-      {/* <Modal
-        animationType="fade"
-        transparent={true}
-        visible={qrModalVisible}
-        onRequestClose={() => setQrModalVisible(false)}
-      >
-        <View style={combinedStyles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={combinedStyles.modalContent}>
-              <Text style={combinedStyles.modalTitle}>{t('projectQRCode')}</Text>
-              
-              <View style={combinedStyles.qrContainer}>
-                <QRCode
-                  value={generateProjectQR()}
-                  size={200}
-                  color={colors.text}
-                  backgroundColor="white"
-                />
-              </View>
-              
-              <Text style={combinedStyles.qrDescription}>
-                {t('scanQRDescription')}
-              </Text>
-              
-              <TouchableOpacity
-                style={styles.closeModalButton}
-                onPress={() => setQrModalVisible(false)}
-              >
-                <Text style={styles.closeModalText}>{t('close')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal> */}
-      {/* // Reemplaza el modal QR existente con este código mejorado */}
 {/* // QR Code Modal mejorado */}
 <Modal
   animationType="fade"
@@ -1463,7 +1428,7 @@ const captureQRCode = async () => {
             <QRCode
             value={generateProjectQR()}
             size={200}
-            color={colors.text}
+            color={colors.qrtext}
             backgroundColor="white"
           />
           </View>

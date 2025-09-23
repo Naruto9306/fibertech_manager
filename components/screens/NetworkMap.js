@@ -86,6 +86,22 @@ const NetworkMap = ({ route, navigation }) => {
 
   const [notifications, setNotifications] = useState([]);
 
+  const colors = {
+    background: isDarkMode ? '#121212' : '#f5f7fa',
+    cardBackground: isDarkMode ? '#1e1e1e' : 'white',
+    text: isDarkMode ? '#ffffff' : '#2c3e50',
+    qrtext: '#2c3e50',
+    secondaryText: isDarkMode ? '#b0b0b0' : '#7f8c8d',
+    border: isDarkMode ? '#333333' : '#e1e8ed',
+    inputBackground: isDarkMode ? '#2a2a2a' : '#f8f9fa',
+    placeholder: isDarkMode ? '#888888' : '#a0a0a0',
+    primary: '#3498db',
+    success: '#2ecc71',
+    warning: '#f39c12',
+    danger: '#e74c3c',
+    purple: '#9b59b6'
+  };
+
   const [region, setRegion] = useState({
     latitude: 37.78825,
     longitude: -122.4324,
@@ -1735,13 +1751,13 @@ const deleteNode = async (nodeId) => {
 
     return (
       <View>
-        <Text style={styles.configSectionTitle}>{device.type} - {device.ports} {t('ports')}</Text>
+        <Text style={[styles.configSectionTitle, {color: theme.text}]}>{device.type} - {device.ports} {t('ports')}</Text>
         
         {ports.map((port, index) => (
-          <View key={index} style={styles.portItem}>
-            <Text style={styles.portLabel}>{t('port')} {port.port}:</Text>
+          <View key={index} style={[styles.portItem]}>
+            <Text style={[styles.portLabel, {color: theme.text}]}>{t('port')} {port.port}:</Text>
             <TextInput
-              style={styles.portInput}
+              style={[styles.portInput, {color: theme.text}]}
               value={port.description}
               onChangeText={(text) => {
                 const newPorts = [...ports];
@@ -1770,33 +1786,6 @@ const deleteNode = async (nodeId) => {
     );
   };
 
-  // Función para obtener código hexadecimal de color basado en nombre
-  // const getColorHexCode = (colorName) => {
-  //   if (!colorName) return '#CCCCCC';
-    
-  //   // Limpiar el nombre del color (puede venir con prefijo de tubo como "1-Blue")
-  //   const cleanColorName = colorName.toString().split('-').pop().trim().toLowerCase();
-    
-  //   const colorMap = {
-  //     'blue': '#0000FF',
-  //     'orange': '#FFA500',
-  //     'green': '#008000',
-  //     'brown': '#A52A2A',
-  //     'slate': '#708090',
-  //     'gray': '#808080',
-  //     'white': '#FFFFFF',
-  //     'red': '#FF0000',
-  //     'black': '#000000',
-  //     'yellow': '#FFFF00',
-  //     'violet': '#EE82EE',
-  //     'rose': '#FF007F',
-  //     'pink': '#FF007F',
-  //     'aqua': '#00FFFF'
-  //   };
-    
-  //   const hexColor = colorMap[cleanColorName] || '#CCCCCC';
-  //   return hexColor;
-  // };
   // Función para obtener código hexadecimal de color basado en nombre (soporta inglés y español)
 const getColorHexCode = (colorName) => {
   if (!colorName) return '#CCCCCC';
@@ -1872,11 +1861,11 @@ const getColorHexCode = (colorName) => {
 
     return (
       <View>
-        <Text style={styles.configSectionTitle}>{fiber.type} {t('fiber')}</Text>
-        <Text style={styles.configSubtitle}>
+        <Text style={[styles.configSectionTitle, {color: theme.text}]}>{fiber.type} {t('fiber')}</Text>
+        <Text style={[styles.configSubtitle, {color: theme.text}]}>
           {standardColors.length} {t('fibersWithStandardColors')}
         </Text>
-        <Text style={styles.configInfo}>
+        <Text style={[styles.configInfo, {color:theme.text}]}>
           {t('quantity')}: {fiber.quantity} {t('unit')}(s) - {t('configureAll')} {standardColors.length} {t('fibers')}
         </Text>
         
@@ -1885,9 +1874,9 @@ const getColorHexCode = (colorName) => {
             <View style={[styles.colorIndicator, 
               {backgroundColor: getColorHexCode(colorObj.color.split('-').pop())}]} 
             />
-            <Text style={styles.colorLabel}>{colorObj.color}:</Text>
+            <Text style={[styles.colorLabel, {color: theme.text}]}>{colorObj.color}:</Text>
             <TextInput
-              style={styles.colorInput}
+              style={[styles.colorInput, {color: theme.text}]}
               value={colorObj.description}
               onChangeText={(text) => {
                 const newColors = [...colors];
@@ -1897,7 +1886,7 @@ const getColorHexCode = (colorName) => {
               placeholder={t('description')}
             />
             <TextInput
-              style={styles.colorInput}
+              style={[styles.colorInput, {color: theme.text}]}
               value={colorObj.connectedTo}
               onChangeText={(text) => {
                 const newColors = [...colors];

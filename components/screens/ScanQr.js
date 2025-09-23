@@ -18,8 +18,8 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../context/AppContext';
-import { useDevice } from '../context/DeviceContext';
 import { importProjectData } from '../../service/storage';
+import { useDevice } from '../context/DeviceContext';
 
 const ScanQr = ({ navigation }) => {
   const { topInset, bottomInset, stylesFull } = useDevice;
@@ -357,7 +357,7 @@ const renderProjectDetailsModal = () => {
           onPress={() => {
             setShowResultsModal(false);
             // Navegar a la vista de detalles del proyecto
-            navigation.navigate('ProjectDetails', { 
+            navigation.navigate('DetallesProyecto', { 
               projectData: scannedData.data,
               fromScan: true 
             });
@@ -612,306 +612,6 @@ const renderProjectDetailsModal = () => {
   processScannedData(mockProjectData);
 };
 
-  // const renderResultsModal = () => {
-  //   if (!scannedData) return null;
-
-  //   return (
-  //     <Modal
-  //       visible={showResultsModal}
-  //       animationType="slide"
-  //       transparent={true}
-  //       onRequestClose={() => setShowResultsModal(false)}
-  //     >
-  //       <View style={styles.modalContainer}>
-  //         <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff' }]}>
-  //           <View style={styles.modalHeader}>
-  //             <Text style={[styles.modalTitle, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-  //               {t('scanResults')}
-  //             </Text>
-  //             <TouchableOpacity onPress={() => setShowResultsModal(false)}>
-  //               <Ionicons name="close" size={24} color={isDarkMode ? '#ffffff' : '#000000'} />
-  //             </TouchableOpacity>
-  //           </View>
-
-  //           <ScrollView style={styles.resultsScroll}>
-  //             {scannedData.type === 'Fiber Project' ? (
-  //               <View style={styles.detailsContainer}>
-  //                 <Text style={styles.detailTitle}>{t('projectInformation')}</Text>
-                  
-  //                 <View style={styles.detailItem}>
-  //                   <Text style={styles.detailLabel}>{t('propertyName')}:</Text>
-  //                   <Text style={styles.detailValue}>{scannedData.data.propertyName || scannedData.data.projectId || t('unknown')}</Text>
-  //                 </View>
-                  
-  //                 <View style={styles.detailItem}>
-  //                   <Text style={styles.detailLabel}>{t('address')}:</Text>
-  //                   <Text style={styles.detailValue}>{scannedData.data.propertyAddress || t('unknown')}</Text>
-  //                 </View>
-                  
-  //                 {scannedData.data.city && (
-  //                   <View style={styles.detailItem}>
-  //                     <Text style={styles.detailLabel}>{t('city')}:</Text>
-  //                     <Text style={styles.detailValue}>{scannedData.data.city}</Text>
-  //                   </View>
-  //                 )}
-                  
-  //                 {scannedData.data.totalUnits && (
-  //                   <View style={styles.detailItem}>
-  //                     <Text style={styles.detailLabel}>{t('totalUnits')}:</Text>
-  //                     <Text style={styles.detailValue}>{scannedData.data.totalUnits}</Text>
-  //                   </View>
-  //                 )}
-                  
-  //                 {scannedData.data.buildType && (
-  //                   <View style={styles.detailItem}>
-  //                     <Text style={styles.detailLabel}>{t('buildType')}:</Text>
-  //                     <Text style={styles.detailValue}>{scannedData.data.buildType}</Text>
-  //                   </View>
-  //                 )}
-                  
-  //                 <TouchableOpacity 
-  //                   style={styles.viewProjectButton}
-  //                   onPress={() => importProject(scannedData.data)}
-  //                   disabled={importing}
-  //                 >
-  //                   {importing ? (
-  //                     <ActivityIndicator color="#ffffff" />
-  //                   ) : (
-  //                     <Text style={styles.viewProjectButtonText}>{t('importProject')}</Text>
-  //                   )}
-  //                 </TouchableOpacity>
-  //               </View>
-  //             ) : (
-  //               <View style={styles.detailsContainer}>
-  //                 <Text style={styles.detailTitle}>{t('scannedContent')}</Text>
-                  
-  //                 <View style={styles.dataContainer}>
-  //                   <Text style={styles.dataText}>{scannedData.data}</Text>
-  //                 </View>
-                  
-  //                 <TouchableOpacity 
-  //                   style={styles.actionButton}
-  //                   onPress={() => {
-  //                     Clipboard.setString(scannedData.data);
-  //                     Alert.alert(t('success'), t('copiedToClipboard'));
-  //                   }}
-  //                 >
-  //                   <Text style={styles.actionButtonText}>{t('copyToClipboard')}</Text>
-  //                 </TouchableOpacity>
-                  
-  //                 {scannedData.data && scannedData.data.startsWith('http') && (
-  //                   <TouchableOpacity 
-  //                     style={[styles.actionButton, { backgroundColor: '#3498db' }]}
-  //                     onPress={() => Linking.openURL(scannedData.data)}
-  //                   >
-  //                     <Text style={styles.actionButtonText}>{t('openLink')}</Text>
-  //                   </TouchableOpacity>
-  //                 )}
-  //               </View>
-  //             )}
-  //           </ScrollView>
-
-  //           <TouchableOpacity 
-  //             style={[styles.modalCloseButton, { backgroundColor: isDarkMode ? '#333333' : '#e0e0e0' }]}
-  //             onPress={() => {
-  //               setShowResultsModal(false);
-  //               resetScanner();
-  //             }}
-  //           >
-  //             <Text style={[styles.modalCloseButtonText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-  //               {t('scanAnother')}
-  //             </Text>
-  //           </TouchableOpacity>
-  //         </View>
-  //       </View>
-  //     </Modal>
-  //   );
-  // };
-
-//   return (
-//     <View style={[styles.container, { paddingBottom: bottomInset }]}>
-//       {/* Header */}
-//       <View style={[styles.header, { paddingTop: topInset + 15 }]}>
-//         <TouchableOpacity 
-//           onPress={() => navigation.goBack()}
-//           style={styles.backButton}
-//         >
-//           <Ionicons name="arrow-back" size={24} color="#ffffff" />
-//         </TouchableOpacity>
-//         <Text style={styles.headerTitle}>{t('scanQrCode')}</Text>
-//         <TouchableOpacity onPress={openHistory}>
-//           <Ionicons name="time-outline" size={24} color="#3498db" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* Camera View */}
-//       {cameraVisible && (
-//         <View style={styles.cameraContainer}>
-//           <CameraView
-//             style={styles.camera}
-//             facing="back"
-//             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-//             barcodeScannerSettings={{
-//               barcodeTypes: ['qr', 'pdf417']
-//             }}
-//           />
-//           <View style={styles.overlay}>
-//             <View style={styles.scanFrame}>
-//               <View style={styles.cornerTopLeft} />
-//               <View style={styles.cornerTopRight} />
-//               <View style={styles.cornerBottomLeft} />
-//               <View style={styles.cornerBottomRight} />
-//             </View>
-            
-//             <Text style={styles.scanText}>{t('alignQrInFrame')}</Text>
-            
-//             <View style={styles.controls}>
-//               <TouchableOpacity 
-//                 style={styles.simulateButton}
-//                 onPress={simulateScan}
-//               >
-//                 <Ionicons name="qr-code-outline" size={20} color="#ffffff" />
-//                 <Text style={styles.simulateButtonText}>{t('simulateScan')}</Text>
-//               </TouchableOpacity>
-              
-//               <TouchableOpacity 
-//                 style={[styles.simulateButton, { backgroundColor: '#9b59b6', marginTop: 10 }]}
-//                 onPress={pickImageFromGallery}
-//                 disabled={loadingImage}
-//               >
-//                 {loadingImage ? (
-//                   <ActivityIndicator size="small" color="#ffffff" />
-//                 ) : (
-//                   <>
-//                     <Ionicons name="image-outline" size={20} color="#ffffff" />
-//                     <Text style={styles.simulateButtonText}>{t('loadFromGallery')}</Text>
-//                   </>
-//                 )}
-//               </TouchableOpacity>
-
-//               <TouchableOpacity 
-//                 style={[styles.simulateButton, { backgroundColor: '#e67e22', marginTop: 10 }]}
-//                 onPress={manualQRInput}
-//               >
-//                 <Ionicons name="create-outline" size={20} color="#ffffff" />
-//                 <Text style={styles.simulateButtonText}>{t('manualInput')}</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </View>
-//         </View>
-//       )}
-
-//       {/* Results View */}
-//       {scanned && !cameraVisible && (
-//         <View style={styles.resultsContainer}>
-//           <Ionicons name="checkmark-circle" size={64} color="#2ecc71" />
-//           <Text style={styles.resultsTitle}>{t('scanSuccessful')}</Text>
-//           <Text style={styles.resultsText}>
-//             {t('qrCodeProcessed')}
-//           </Text>
-          
-//           <TouchableOpacity 
-//             style={styles.scanAgainButton}
-//             onPress={resetScanner}
-//           >
-//             <Ionicons name="scan-outline" size={20} color="#ffffff" />
-//             <Text style={styles.scanAgainButtonText}>{t('scanAnotherCode')}</Text>
-//           </TouchableOpacity>
-//         </View>
-//       )}
-
-//       {/* Scan History Modal */}
-//       <Modal
-//         visible={modalVisible}
-//         animationType="slide"
-//         transparent={true}
-//         onRequestClose={() => setModalVisible(false)}
-//       >
-//         <View style={styles.modalContainer}>
-//           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff' }]}>
-//             <View style={styles.modalHeader}>
-//               <Text style={[styles.modalTitle, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-//                 {selectedScan ? t('scanDetails') : t('scanHistory')}
-//               </Text>
-//               <TouchableOpacity onPress={() => setModalVisible(false)}>
-//                 <Ionicons name="close" size={24} color={isDarkMode ? '#ffffff' : '#000000'} />
-//               </TouchableOpacity>
-//             </View>
-
-//             {selectedScan ? (
-//               selectedScan.type === 'Fiber Project' ? renderProjectDetails() : renderTextDetails()
-//             ) : (
-//               <ScrollView style={styles.historyScroll}>
-//                 {scanHistory.length > 0 ? (
-//                   scanHistory.map((item) => (
-//                     <TouchableOpacity
-//                       key={item.id}
-//                       style={[styles.historyItem, { backgroundColor: isDarkMode ? '#2c2c2c' : '#f8f9fa' }]}
-//                       onPress={() => viewScanDetails(item)}
-//                     >
-//                       <View style={styles.historyIcon}>
-//                         <Ionicons 
-//                           name={item.type === 'Fiber Project' ? 'business' : 'qr-code'} 
-//                           size={20} 
-//                           color="#3498db" 
-//                         />
-//                       </View>
-//                       <View style={styles.historyContent}>
-//                         <Text style={[styles.historyCode, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-//                           {item.code}
-//                         </Text>
-//                         <Text style={styles.historyType}>{item.type}</Text>
-//                         <Text style={styles.historyTime}>{item.timestamp}</Text>
-//                       </View>
-//                       <View style={[
-//                         styles.statusBadge,
-//                         { backgroundColor: item.status === 'Active' ? '#2ecc71' : '#e67e22' }
-//                       ]}>
-//                         <Text style={styles.statusText}>{item.status}</Text>
-//                       </View>
-//                     </TouchableOpacity>
-//                   ))
-//                 ) : (
-//                   <View style={styles.emptyHistory}>
-//                     <Ionicons name="time-outline" size={48} color="#7f8c8d" />
-//                     <Text style={[styles.emptyHistoryText, { color: isDarkMode ? '#b0b0b0' : '#7f8c8d' }]}>
-//                       {t('noScanHistory')}
-//                     </Text>
-//                   </View>
-//                 )}
-//               </ScrollView>
-//             )}
-
-//             <TouchableOpacity 
-//               style={[styles.modalCloseButton, { backgroundColor: isDarkMode ? '#333333' : '#e0e0e0' }]}
-//               onPress={() => {
-//                 if (selectedScan) {
-//                   setSelectedScan(null);
-//                 } else {
-//                   setModalVisible(false);
-//                 }
-//               }}
-//             >
-//               <Text style={[styles.modalCloseButtonText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-//                 {selectedScan ? t('backToHistory') : t('close')}
-//               </Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {(importing || loadingImage) && (
-//         <View style={styles.importingOverlay}>
-//           <ActivityIndicator size="large" color="#3498db" />
-//           <Text style={styles.importingText}>
-//             {importing ? t('importingProject') : t('processingImage')}
-//           </Text>
-//         </View>
-//       )}
-//     </View>
-//   );
-// };
-
 const renderResultsModal = () => {
   if (!scannedData) return null;
 
@@ -1014,7 +714,7 @@ const renderResultsModal = () => {
 return (
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset + 15 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 10 }]}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -1208,8 +908,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#000000',
-    padding: 16,
-    paddingTop: 50,
+    padding: 23,
+    // paddingTop: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
   },
@@ -1252,9 +952,11 @@ const styles = StyleSheet.create({
   },
   cameraContainer: {
     flex: 1,
+    // top: 2
   },
   camera: {
     flex: 1,
+    // top: 1
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1268,7 +970,8 @@ const styles = StyleSheet.create({
     borderWidth: 2, 
     borderColor: '#fff', 
     borderRadius: 12,
-    position: 'relative'
+    position: 'relative',
+    top: -20
   },
   cornerTopLeft: {
     position: 'absolute',

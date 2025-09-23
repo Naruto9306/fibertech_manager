@@ -31,7 +31,7 @@ const LoadingScreen = () => {
   };
 
   return (
-    <View style={[styles.container, colors.background]}>
+    <View style={[styles.container, {backgroundColor: colors.background}]}>
       {/* Logo de la aplicación */}
       <View style={styles.logoContainer}>
         <Image 
