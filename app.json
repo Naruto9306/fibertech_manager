@@ -2,7 +2,7 @@
   "expo": {
     "name": "FibraOpticaApp",
     "slug": "FibraOpticaApp",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/logo3.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,8 @@
       "jsEngine": "hermes",
       "infoPlist": {
         "NSCameraUsageDescription": "Esta app necesita acceso a la cámara para tomar fotos de instalaciones de fibra óptica",
-        "NSMicrophoneUsageDescription": "Esta app necesita acceso al micrófono para grabar video"
+        "NSMicrophoneUsageDescription": "Esta app necesita acceso al micrófono para grabar video",
+        "NSPhotoLibraryUsageDescription": "La app necesita acceso a tus fotos para escanear códigos QR desde la galería."
       },
       "bundleIdentifier": "com.yourcompany.fibraopticaapp"
     },
@@ -33,12 +34,11 @@
       },
       "softwareKeyboardLayoutMode": "pan",
       "abiFilters": [
-        "armeabi-v7a",
         "arm64-v8a"
       ],
       "enableDangerousExperimentalLeanBuilds": true,
       "jsEngine": "hermes",
-      "ndk": "arm64-v8a, armeabi-v7a",
+      "ndk": "arm64-v8a",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -46,7 +46,7 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.yourcompany.fibraopticaapp",
-      "versionCode": 15
+      "versionCode": 21
     },
     "androidStatusBar": {
       "translucent": true,
@@ -77,15 +77,23 @@
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "buildToolsVersion": "35.0.0",
-            "buildArchs": ["armeabi-v7a", "arm64-v8a"],
+            "buildArchs": [
+              "arm64-v8a"
+            ],
             "reactNativeArchitectures": [
-              "armeabi-v7a",
               "arm64-v8a"
             ]
           },
           "ios": {
             "deploymentTarget": "15.1"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+         {
+          "photosPermission": "La app necesita acceso a tus fotos para escanear códigos QR desde la galería.",
+          "cameraPermission": "La app necesita acceso a la cámara para escanear códigos QR."
         }
       ]
     ],

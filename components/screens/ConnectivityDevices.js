@@ -1544,7 +1544,10 @@ const ConnectivityDevices = ({ route, navigation, theme }) => {
               onPress: async () => {
                 await DeviceConfigService.saveDeviceConfig(projectId, selectedDevices);
                 await FiberConfigService.saveFiberConfig(projectId, selectedFibers);
-                navigation.navigate('NetworkMap', { projectId });
+                // Abrir mapa para crear RED
+                // navigation.navigate('NetworkMap', { projectId });
+                Alert.alert(t('success'), t('configurationSaved1'));
+                navigation.navigate('Dashboard');
               }
             }
           ]
@@ -1557,7 +1560,9 @@ const ConnectivityDevices = ({ route, navigation, theme }) => {
       await FiberConfigService.saveFiberConfig(projectId, selectedFibers);
 
       // Navegar al mapa de la red
-      navigation.navigate('NetworkMap', { projectId });
+      // navigation.navigate('NetworkMap', { projectId });
+      Alert.alert(t('success'), t('configurationSaved1'));
+      navigation.navigate('Dashboard');
 
     } catch (error) {
       console.log('Error saving configuration:', error);
